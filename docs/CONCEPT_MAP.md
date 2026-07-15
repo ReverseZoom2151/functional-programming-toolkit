@@ -74,19 +74,19 @@ All maintained domains follow the same contract:
 - an optional CLI adapter; and
 - tests for a known result, an edge case, and an invalid input path.
 
-## Value-led roadmap
+## Delivered roadmap
 
-### Next, if the toolkit grows
-
-1. **Puzzle catalogue** — use the `Map`/trie work to provide named built-in
-   Sudoku puzzles and simple prefix lookup. This earns the data-structure
-   complexity through a real CLI capability.
-2. **Solver diagnostics** — expose solution counts/uniqueness and simple
-   search statistics. This makes the Sudoku material more useful and creates a
-   natural place for folds and monoidal aggregation.
-3. **Property tests** — introduce QuickCheck only when properties such as
-   “shuffle preserves a deck” or “simplification preserves evaluation” are
-   more valuable than hand-written examples alone.
+1. **Puzzle catalogue** — `Functional.Sudoku.Catalogue` provides named,
+   searchable built-in puzzles through `puzzles [QUERY]` and `puzzle NAME`.
+   It deliberately stays small and curated; a trie is reserved for a catalogue
+   large enough to benefit from that extra structure.
+2. **Solver diagnostics** — bounded search now distinguishes no solution,
+   unique solution, and multiple solutions without enumerating an unbounded
+   solution set. The CLI exposes this through `puzzle NAME` and
+   `sudoku --diagnose FILE`.
+3. **Property tests** — QuickCheck now verifies deck preservation, algebraic
+   simplification semantics, parser/render meaning, and Sudoku search bounds;
+   example tests continue to cover known inputs and error paths.
 
 ### Deliberately deferred
 

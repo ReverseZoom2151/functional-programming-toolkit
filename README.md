@@ -8,11 +8,14 @@ into small, composable examples of pure modelling, search, and normalisation.
 
 - `src/Functional/Blackjack.hs` — a pure Blackjack rules engine with correct
   multi-ace scoring and deterministic rounds.
-- `src/Functional/Sudoku.hs` — a 9×9 Sudoku parser and backtracking solver.
+- `src/Functional/Sudoku.hs` — a 9×9 Sudoku parser, bounded backtracking
+  solver, and uniqueness diagnostics.
+- `src/Functional/Sudoku/Catalogue.hs` — named, searchable built-in puzzles.
 - `src/Functional/Algebra.hs` — symbolic single-variable expressions and
   canonical polynomial simplification.
 - `app/Main.hs` — a small command-line interface.
-- `test/Main.hs` — smoke tests for the public behaviours and edge cases.
+- `test/Main.hs` — example and QuickCheck property tests for public behaviour
+  and invariants.
 - `resources/` — the original course archive, retained locally as reference
   material but excluded from Git so the maintained project stays focused.
 
@@ -27,7 +30,11 @@ cabal run fp-toolkit -- blackjack-demo
 cabal run fp-toolkit -- simplify-demo
 cabal run fp-toolkit -- simplify "2 * x^2 + x - 3"
 cabal run fp-toolkit -- evaluate 4 "2 * x^2 + x - 3"
+cabal run fp-toolkit -- puzzles
+cabal run fp-toolkit -- puzzles starter
+cabal run fp-toolkit -- puzzle hard
 cabal run fp-toolkit -- sudoku examples/easy-sudoku.txt
+cabal run fp-toolkit -- sudoku --diagnose examples/easy-sudoku.txt
 ```
 
 ## Design
@@ -45,6 +52,13 @@ The algebra commands accept integers, `x`, `+`, `-`, `*`, parentheses, and
 non-negative powers of `x`, such as `2 * x^2 + x - 3`. Quote expressions in
 your shell so their spaces and operators are passed to the program unchanged.
 
+### Sudoku catalogue and diagnostics
+
+`puzzles` lists the curated catalogue; add a query to search names and
+descriptions. `puzzle NAME` solves a named puzzle and reports whether it has
+no solution, a unique solution, or multiple solutions. The `--diagnose` form
+provides the same bounded diagnostic for a puzzle file.
+
 ## Development
 
 ```bash
@@ -52,8 +66,8 @@ cabal build all
 cabal test all
 ```
 
-The project intentionally uses only `base`, so a fresh GHC/Cabal installation
-is sufficient to build it.
+The library and executable intentionally use only `base`. The test suite adds
+QuickCheck for property-based verification; Cabal fetches it automatically.
 
 The interactive Blackjack game uses a seedable pseudo-random shuffle, so the
 rules and deck handling remain deterministic and testable; it is intended for

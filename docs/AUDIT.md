@@ -29,9 +29,10 @@ instead demonstrates three complementary functional-programming techniques:
 2. constraint propagation through pure search (Sudoku); and
 3. recursive data types plus canonical representations (Algebra).
 
-## Next milestones
+## Current verification and future boundary
 
-- Add property tests.
-- Add an interactive Blackjack front end with injectable randomness.
-- Consider a separate `tetris` package only after its unfinished shape layer
-  has been independently completed and tested.
+- The toolkit has example tests plus QuickCheck invariants for its core
+  domains, and GitHub Actions runs the Cabal build and test suite.
+- Blackjack has a terminal front end with deterministic, seedable shuffling.
+- Tetris remains a separate future package only after its unfinished shape
+  layer has an independently verified specification and renderer.
