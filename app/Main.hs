@@ -3,6 +3,7 @@ module Main where
 import Functional.Algebra
 import Functional.Blackjack
 import Functional.Sudoku
+import System.CPUTime (getCPUTime)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
 
@@ -18,6 +19,11 @@ run ["blackjack-demo"] = do
       putStrLn ("Player: " ++ show player ++ " (" ++ show (handValue player) ++ ")")
       putStrLn ("Dealer: " ++ show dealer ++ " (" ++ show (handValue dealer) ++ ")")
       putStrLn ("Winner: " ++ show result)
+run ["blackjack"] = do
+  seed <- getCPUTime
+  case startRound (shuffleWithSeed seed fullDeck) of
+    Left message -> failWith message
+    Right gameState -> playBlackjack gameState
 run ["simplify-demo"] = do
   let expression = Add (Multiply (Constant 2) (Power 2)) (Add (Variable) (Constant 3))
   putStrLn ("Expression: " ++ renderExpr expression)
@@ -37,6 +43,7 @@ run ["sudoku", fileName] = do
       solution : _ -> putStrLn (renderBoard solution)
 run _ = do
   putStrLn "fp-toolkit commands:"
+  putStrLn "  blackjack"
   putStrLn "  blackjack-demo"
   putStrLn "  simplify-demo"
   putStrLn "  simplify EXPRESSION"
@@ -52,3 +59,34 @@ withExpression [] _ = failWith "an expression is required"
 withExpression source action = case parseExpr (unwords source) of
   Left message -> failWith message
   Right expression -> action expression
+
+playBlackjack :: Round -> IO ()
+playBlackjack gameState = do
+  putStrLn ("Your hand: " ++ show (playerHand gameState) ++ " (" ++ show (handValue (playerHand gameState)) ++ ")")
+  if isBust (playerHand gameState)
+    then announceResult (finishRound gameState)
+    else do
+      putStr "Hit or stand? [h/S] "
+      answer <- getLine
+      case answer of
+        "h" -> drawCard gameState
+        "H" -> drawCard gameState
+        "hit" -> drawCard gameState
+        "Hit" -> drawCard gameState
+        "" -> announceResult (finishRound gameState)
+        "s" -> announceResult (finishRound gameState)
+        "S" -> announceResult (finishRound gameState)
+        "stand" -> announceResult (finishRound gameState)
+        "Stand" -> announceResult (finishRound gameState)
+        _ -> putStrLn "Please enter h or s." >> playBlackjack gameState
+
+drawCard :: Round -> IO ()
+drawCard gameState = case hit gameState of
+  Left message -> failWith message
+  Right nextRound -> playBlackjack nextRound
+
+announceResult :: (Winner, Hand, Hand) -> IO ()
+announceResult (result, player, dealer) = do
+  putStrLn ("Player: " ++ show player ++ " (" ++ show (handValue player) ++ ")")
+  putStrLn ("Dealer: " ++ show dealer ++ " (" ++ show (handValue dealer) ++ ")")
+  putStrLn ("Winner: " ++ show result)

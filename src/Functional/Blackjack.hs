@@ -4,11 +4,17 @@ module Functional.Blackjack
   , Rank (..)
   , Card (..)
   , Hand
+  , Round
   , Move (..)
   , Winner (..)
   , fullDeck
+  , shuffleWithSeed
   , handValue
   , isBust
+  , startRound
+  , playerHand
+  , hit
+  , finishRound
   , playRound
   , renderCard
   ) where
@@ -24,6 +30,9 @@ data Card = Card { rank :: Rank, suit :: Suit }
 
 type Hand = [Card]
 
+-- | A round before the dealer has completed their play.
+data Round = Round Hand Hand [Card]
+
 data Move = Hit | Stand
   deriving (Eq, Show)
 
@@ -35,6 +44,21 @@ instance Show Card where
 
 fullDeck :: [Card]
 fullDeck = [Card r s | r <- [minBound .. maxBound], s <- [minBound .. maxBound]]
+
+-- | Deterministically shuffle a deck from a seed. This is deliberately a
+-- simple pseudo-random shuffle for games and reproducible demos, not a
+-- cryptographic random-number generator.
+shuffleWithSeed :: Integer -> [Card] -> [Card]
+shuffleWithSeed _ [] = []
+shuffleWithSeed seed cards = selected : shuffleWithSeed seed' remaining
+  where
+    seed' = nextSeed seed
+    index = fromInteger (seed' `mod` toInteger (length cards))
+    selected = cards !! index
+    remaining = take index cards ++ drop (index + 1) cards
+
+nextSeed :: Integer -> Integer
+nextSeed seed = (1103515245 * abs seed + 12345) `mod` 2147483648
 
 renderCard :: Card -> String
 renderCard (Card r s) = show r ++ " of " ++ show s
@@ -63,23 +87,40 @@ isBust = (> 21) . handValue
 -- cards, follows the supplied moves, then the dealer draws to at least 17.
 playRound :: [Card] -> [Move] -> Either String (Winner, Hand, Hand)
 playRound deck moves = do
-  (playerStart, dealerStart, rest) <- dealInitial deck
-  (playerHand, afterPlayer) <- playPlayer playerStart rest moves
-  let (dealerHand, _) = playDealer dealerStart afterPlayer
-  pure (winner playerHand dealerHand, playerHand, dealerHand)
+  gameState <- startRound deck
+  afterMoves <- playMoves gameState moves
+  pure (finishRound afterMoves)
 
-dealInitial :: [Card] -> Either String (Hand, Hand, [Card])
-dealInitial (p1:d1:p2:d2:rest) = Right ([p1, p2], [d1, d2], rest)
-dealInitial _ = Left "a round needs at least four cards"
+-- | Deal the opening cards in player/dealer/player/dealer order.
+startRound :: [Card] -> Either String Round
+startRound (p1:d1:p2:d2:rest) = Right (Round [p1, p2] [d1, d2] rest)
+startRound _ = Left "a round needs at least four cards"
 
-playPlayer :: Hand -> [Card] -> [Move] -> Either String (Hand, [Card])
-playPlayer hand deck [] = Right (hand, deck)
-playPlayer hand deck (Stand:_) = Right (hand, deck)
-playPlayer hand (next:rest) (Hit:moves)
-  | isBust hand' = Right (hand', rest)
-  | otherwise = playPlayer hand' rest moves
-  where hand' = hand ++ [next]
-playPlayer _ [] (Hit:_) = Left "the deck ran out while the player was drawing"
+playerHand :: Round -> Hand
+playerHand (Round hand _ _) = hand
+
+-- | Draw one card for the player.
+hit :: Round -> Either String Round
+hit (Round hand dealer (next:rest)) = Right (Round (hand ++ [next]) dealer rest)
+hit _ = Left "the deck ran out while the player was drawing"
+
+-- | Complete dealer play and determine the winner. A dealer does not draw
+-- when the player has already bust.
+finishRound :: Round -> (Winner, Hand, Hand)
+finishRound (Round player dealer deck)
+  | isBust player = (Dealer, player, dealer)
+  | otherwise = (winner player dealerHand, player, dealerHand)
+  where
+    (dealerHand, _) = playDealer dealer deck
+
+playMoves :: Round -> [Move] -> Either String Round
+playMoves gameState [] = Right gameState
+playMoves gameState (Stand:_) = Right gameState
+playMoves gameState (Hit:moves) = do
+  nextState <- hit gameState
+  if isBust (playerHand nextState)
+    then Right nextState
+    else playMoves nextState moves
 
 playDealer :: Hand -> [Card] -> (Hand, [Card])
 playDealer hand deck@(next:rest)

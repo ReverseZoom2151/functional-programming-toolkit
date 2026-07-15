@@ -3,6 +3,7 @@ module Main where
 import Functional.Algebra
 import Functional.Blackjack
 import Functional.Sudoku
+import Data.List (sort)
 import System.Exit (exitFailure)
 
 main :: IO ()
@@ -15,9 +16,11 @@ blackjackTests = do
   aceScore <- check "Blackjack scores multiple aces correctly" (handValue [Card Ace Spades, Card Ace Hearts, Card Nine Clubs] == 21)
   bustScore <- check "Blackjack selects the lowest all-bust ace total" (handValue [Card Ace Spades, Card Ace Hearts, Card King Clubs, Card Queen Diamonds] == 22)
   deckSize <- check "Blackjack builds a standard 52-card deck" (length fullDeck == 52)
+  shufflePreservesDeck <- check "Blackjack shuffle is deterministic and preserves every card" (let shuffled = shuffleWithSeed 42 fullDeck in shuffled == shuffleWithSeed 42 fullDeck && sort shuffled == sort fullDeck)
   roundResult <- check "Blackjack resolves a deterministic round" (case playRound [Card Ten Hearts, Card Nine Clubs, Card Seven Spades, Card Seven Diamonds, Card Two Hearts] [Hit] of Right (Player, player, dealer) -> handValue player == 19 && handValue dealer == 16; _ -> False)
   shortDeck <- check "Blackjack rejects an incomplete initial deck" (case playRound [] [] of Left _ -> True; Right _ -> False)
-  pure (aceScore && bustScore && deckSize && roundResult && shortDeck)
+  bustStopsDealer <- check "Blackjack does not draw for the dealer after a player bust" (case startRound [Card King Hearts, Card Nine Clubs, Card Queen Spades, Card Seven Diamonds, Card Two Hearts] >>= hit of Right gameState -> let (_, _, dealer) = finishRound gameState in length dealer == 2; Left _ -> False)
+  pure (aceScore && bustScore && deckSize && shufflePreservesDeck && roundResult && shortDeck && bustStopsDealer)
 
 sudokuTests :: IO Bool
 sudokuTests = case parseBoard easyPuzzle of
