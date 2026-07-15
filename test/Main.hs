@@ -73,15 +73,19 @@ tetrisTests = do
   let initial = newGame [0]
       afterDrop = step Drop initial
       movedLeft = foldl (\game action -> step action game) initial (replicate 20 Leftward)
-      afterLine = playBatch (newGame (repeat 3))
-      afterTwentyLines = iterate (playBatch . playBatch) (newGame (repeat 3)) !! 5
+      scriptedO = either (error "valid O queue") id (newGameWithQueue "O")
+      afterLine = playBatch scriptedO
+      afterTwentyLines = iterate (playBatch . playBatch) scriptedO !! 5
   dropLocksOnlyActivePiece <- check "Tetris hard drop locks one piece and spawns exactly one successor" (not (gameOver afterDrop) && length (filter (== '#') (renderGame afterDrop)) == 8)
   dropDoesNotScoreWithoutLine <- check "Tetris does not score a hard drop without a cleared line" (score afterDrop == 0)
   movementStopsAtWall <- check "Tetris prevents movement through the left wall" (renderGame (step Leftward movedLeft) == renderGame movedLeft)
-  preview <- check "Tetris previews the next queued piece" (nextPiece initial == 'I')
+  preview <- check "Tetris previews the next queued piece" (nextPiece initial == 'J')
+  sevenBag <- check "Tetris draws one of each tetromino before repeating" (take 7 (map nextPiece (iterate (step Drop) initial)) == "JLOSTZI")
+  holdStoresOnePiece <- check "Tetris stores one piece and prevents a second hold before locking" (let held = step Hold initial in heldPiece held == Just 'I' && nextPiece held == 'L' && heldPiece (step Hold held) == Just 'I')
+  timedGravity <- check "Tetris gravity ticks use the same pure fall transition" (renderGame (step Tick initial) == renderGame (step Downward initial) && gravityDelayMicros initial == 1000000)
   completedRows <- check "Tetris clears completed rows and records score" (linesCleared afterLine == 2 && score afterLine == 400)
   levelProgression <- check "Tetris raises its level every ten cleared lines" (linesCleared afterTwentyLines >= 10 && level afterTwentyLines >= 2)
-  pure (dropLocksOnlyActivePiece && dropDoesNotScoreWithoutLine && movementStopsAtWall && preview && completedRows && levelProgression)
+  pure (dropLocksOnlyActivePiece && dropDoesNotScoreWithoutLine && movementStopsAtWall && preview && sevenBag && holdStoresOnePiece && timedGravity && completedRows && levelProgression)
 
 playBatch :: Game -> Game
 playBatch starting = foldl placeAt starting [0, 2, 4, 6, 8]

@@ -2,10 +2,11 @@ module Main where
 
 import Functional.Games.Tetris
 import System.IO (hFlush, stdout)
+import System.Timeout (timeout)
 
 main :: IO ()
 main = do
-  putStrLn "Terminal Tetris — l/r rotate down drop, q quits."
+  putStrLn "Terminal Tetris — l/r rotate down drop hold, q quits."
   loop (newGame [1 ..])
 
 loop :: Game -> IO ()
@@ -16,13 +17,15 @@ loop game = do
     else do
       putStr "move> "
       hFlush stdout
-      command <- getLine
+      command <- timeout (gravityDelayMicros game) getLine
       case command of
-        "q" -> putStrLn "Goodbye."
-        "l" -> loop (step Leftward game)
-        "r" -> loop (step Rightward game)
-        "u" -> loop (step Rotate game)
-        "d" -> loop (step Downward game)
-        " " -> loop (step Drop game)
-        "drop" -> loop (step Drop game)
-        _ -> putStrLn "Use l, r, u, d, drop, or q." >> loop game
+        Nothing -> loop (step Tick game)
+        Just "q" -> putStrLn "Goodbye."
+        Just "l" -> loop (step Leftward game)
+        Just "r" -> loop (step Rightward game)
+        Just "u" -> loop (step Rotate game)
+        Just "d" -> loop (step Downward game)
+        Just " " -> loop (step Drop game)
+        Just "drop" -> loop (step Drop game)
+        Just "hold" -> loop (step Hold game)
+        Just _ -> putStrLn "Use l, r, u, d, drop, hold, or q." >> loop game
