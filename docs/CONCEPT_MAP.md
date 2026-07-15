@@ -15,7 +15,8 @@ Course archive (local resources/)
         ├── search + safe failure ──> Sudoku solver
         ├── recursion + normal forms ──> Algebra engine
         ├── folds / laws / test design ──> module tests and invariants
-        └── specialised experiments ──> separately scoped future demos
+        ├── state-machine experiments ──> terminal Tetris executable
+        └── specialised experiments ──> intentionally separate projects
 ```
 
 ## Selection rule
@@ -43,10 +44,10 @@ This prevents the project from becoming an unmaintainable museum of exercises.
 | Worksheets 8–9; `functors.hs`, `applicatives.hs`, `monads.hs`, `monad_laws_checker.hs` | Contextual computation, validation, composition, law-driven testing | **Use selectively** | Future command parsing and richer validation may use `Either`; add property/law testing when an abstraction is introduced, not before |
 | `bonus_worksheets/bonus_1.hs` | Recursion and list proofs | **Reference only** | Existing tests are clearer than reproducing educational derivations in the public API |
 | `bonus_worksheets/bonus_2.hs` and `monoids.hs` | Semigroups, monoids, compositional aggregation | **Future utility only** | Add an aggregate score/statistics feature only if the CLI gains sessions or reports |
-| `bonus_worksheets/bonus_3.hs` | `Map`-backed tries and sets | **Future feature candidate** | A dictionary/autocomplete or puzzle catalogue module, if the toolkit gains searchable saved content |
+| `bonus_worksheets/bonus_3.hs` | `Map`-backed tries and sets | **Adopted selectively** | `Functional.Sudoku.Catalogue` uses a `Map` for exact-name lookup and a compact prefix index for curated puzzle discovery |
 | `higher_order/`, `map.hs`, `function_composition.hs` | Higher-order transformations and point-free composition | **Adopted as style guidance** | Use when it improves clarity; do not add a standalone reimplementation of Prelude |
-| `power/` and `measure_time.hs` | Comparing equivalent algorithms and measuring cost | **Future engineering tool** | Add a benchmark suite only when Sudoku/search performance warrants an evidence-based optimisation |
-| `tetris/` | State machine, shape invariants, rendering boundary, score bookkeeping | **Separate future demo** | Rebuild as its own executable after completing the shape API and choosing a supported UI; do not import incomplete `CodeWorld`/ANSI dependencies into the toolkit core |
+| `power/` and `measure_time.hs` | Comparing equivalent algorithms and measuring cost | **Adopted selectively** | `fp-bench` measures bounded Sudoku diagnostics with CPU time; it is a regression signal, not a cross-machine performance claim |
+| `tetris/` | State machine, shape invariants, rendering boundary, score bookkeeping | **Adopted as a separate executable** | `Functional.Tetris` is a dependency-free pure engine; `fp-tetris` is its terminal-only boundary |
 | `embedding/` | Typed domains and hardware-oriented embedding with Clash | **Separate future repository or package** | Valuable, but its `Clash` dependency and domain do not serve the terminal toolkit |
 | `lectures & notes/cheatsheet.hs`, `functional_recipes.hs`, basic declarations | Pedagogical explanations and incomplete walkthroughs | **Archive only** | Link or cite them from future learning notes; never compile them as production code |
 
@@ -58,9 +59,9 @@ This prevents the project from becoming an unmaintainable museum of exercises.
                            │
      ┌─────────────┬───────┴─────────┬─────────────┐
      │             │                 │             │
-Blackjack      Sudoku             Algebra      future domains
-pure state     parse/search        parse/normalise   (separate modules)
-rules          constraints         expressions
+Blackjack      Sudoku             Algebra      Tetris
+pure state     parse/search        parse/normalise   pure board
+rules          constraints         expressions       transitions
      │             │                 │
      └─────────────┴─────────────────┴─────────────┘
                     tests + invariants
@@ -87,11 +88,16 @@ All maintained domains follow the same contract:
 3. **Property tests** — QuickCheck now verifies deck preservation, algebraic
    simplification semantics, parser/render meaning, and Sudoku search bounds;
    example tests continue to cover known inputs and error paths.
+4. **Explainability and measurement** — Sudoku offers the most-constrained
+   next decision as a hint, and `fp-bench` times the bounded diagnostic pass
+   over the curated hard puzzle.
+5. **Algebra exploration** — differentiation, substitution, and the `repl`
+   command make the expression engine usable beyond one-shot commands.
+6. **Tetris** — a separately scoped `fp-tetris` executable exercises a pure
+   board/game-state transition engine, with tested hard-drop and wall rules.
 
 ### Deliberately deferred
 
-- Tetris, until its unfinished shape layer has a complete specification and a
-  supported renderer.
 - Clash embedding, because it is a different product domain.
 - A generic data-structures library, unless an actual command needs it.
 - Copying lecture/worksheet definitions that duplicate Prelude or exist only as
