@@ -22,6 +22,7 @@ Install GHC and Cabal, then run:
 
 ```bash
 cabal test
+cabal run fp-toolkit -- blackjack
 cabal run fp-toolkit -- blackjack-demo
 cabal run fp-toolkit -- simplify-demo
 cabal run fp-toolkit -- simplify "2 * x^2 + x - 3"
@@ -51,3 +52,7 @@ cabal test all
 
 The project intentionally uses only `base`, so a fresh GHC/Cabal installation
 is sufficient to build it.
+
+The interactive Blackjack game uses a seedable pseudo-random shuffle, so the
+rules and deck handling remain deterministic and testable; it is intended for
+local play, not security-sensitive randomness.
