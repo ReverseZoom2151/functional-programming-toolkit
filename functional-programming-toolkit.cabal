@@ -3,9 +3,8 @@ name:               functional-programming-toolkit
 version:            0.1.0.0
 synopsis:           A small, tested showcase of functional programming in Haskell
 description:
-  A terminal toolkit built from the strongest examples in the COMS10016
-  Functional Programming course archive: Blackjack, Sudoku solving, and
-  symbolic polynomial simplification.
+  A terminal toolkit for pure functional programs: Blackjack, Sudoku solving,
+  symbolic polynomial algebra, and Tetris.
 category:           Education
 build-type:         Simple
 license:             BSD-3-Clause

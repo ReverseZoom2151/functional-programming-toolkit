@@ -37,7 +37,7 @@ definitions =
     , "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
     )
   , ( "hard"
-    , "A deeper search puzzle from the original course material."
+    , "A deeper search puzzle for exercising the solver."
     , "8..........36......7..9.2...5...7.......457.....1...3...1....68..85...1..9....4.."
     )
   ]

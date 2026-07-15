@@ -164,21 +164,14 @@ and diagnostics, catalogue search, and algebra differentiation/substitution.
 
 GitHub Actions runs the build and test suite on every push and pull request.
 
-## From course archive to maintained project
+## Design notes
 
-The project began as selected COMS10016 Functional Programming coursework.
-The original files remain in local-only `resources/` for reference; they are
-not part of the build. The maintained codebase adopts the course ideas that
-become coherent capabilities, rather than exposing a web interface or copying
-every worksheet.
-
-- [Concept map](docs/CONCEPT_MAP.md) — why each course idea was adopted,
-  deferred, or kept as reference material.
-- [Migration audit](docs/AUDIT.md) — the original archive’s status and the
-  maintained project boundary.
+The toolkit favours a small, reusable core and thin terminal boundaries. Its
+[concept map](docs/CONCEPT_MAP.md) explains the shared architecture and the
+[product boundary](docs/AUDIT.md) records what the package guarantees.
 
 ---
 
 The name **Functional Programming Toolkit** is intentional: it describes a
 growing set of small, complete Haskell programs without tying the repository to
-one game, one assignment, or one course module.
+one game or one narrow use case.
