@@ -7,7 +7,8 @@ module Functional.Sudoku.Catalogue
   ) where
 
 import Data.Char (toLower)
-import Data.List (find, isInfixOf)
+import qualified Data.Map.Strict as Map
+import Data.List (isInfixOf, nubBy)
 import Data.Maybe (mapMaybe)
 import Functional.Sudoku (Board, parseBoard)
 
@@ -18,7 +19,13 @@ data Puzzle = Puzzle
   }
 
 catalogue :: [Puzzle]
-catalogue = mapMaybe makePuzzle definitions
+catalogue = Map.elems catalogueByName
+
+catalogueByName :: Map.Map String Puzzle
+catalogueByName = Map.fromList [(normalise (puzzleName puzzle), puzzle) | puzzle <- parsedCatalogue]
+
+parsedCatalogue :: [Puzzle]
+parsedCatalogue = mapMaybe makePuzzle definitions
   where
     makePuzzle (name, description, source) =
       Puzzle name description <$> eitherToMaybe (parseBoard source)
@@ -38,14 +45,31 @@ definitions =
 -- | Search names and descriptions case-insensitively. An empty query returns
 -- the whole catalogue, which makes it useful for listing puzzles.
 findPuzzles :: String -> [Puzzle]
-findPuzzles query = filter matches catalogue
+findPuzzles query
+  | null needle = catalogue
+  | otherwise = deduplicate (prefixMatches ++ descriptionMatches)
   where
     needle = normalise query
-    matches puzzle = null needle || needle `isInfixOf` normalise (puzzleName puzzle) || needle `isInfixOf` normalise (puzzleDescription puzzle)
+    prefixMatches = Map.findWithDefault [] needle prefixIndex
+    descriptionMatches = filter (isInfixOf needle . normalise . puzzleDescription) catalogue
 
 -- | Resolve a puzzle by its complete name, ignoring case.
 lookupPuzzle :: String -> Maybe Puzzle
-lookupPuzzle name = find ((== normalise name) . normalise . puzzleName) catalogue
+lookupPuzzle name = Map.lookup (normalise name) catalogueByName
+
+prefixIndex :: Map.Map String [Puzzle]
+prefixIndex = Map.fromListWith (++)
+  [ (prefix, [puzzle])
+  | puzzle <- catalogue
+  , prefix <- prefixes (normalise (puzzleName puzzle))
+  ]
+
+prefixes :: String -> [String]
+prefixes name = [take length' name | length' <- [1 .. length name]]
+
+deduplicate :: [Puzzle] -> [Puzzle]
+deduplicate = nubBy sameName
+  where sameName left right = puzzleName left == puzzleName right
 
 normalise :: String -> String
 normalise = map toLower

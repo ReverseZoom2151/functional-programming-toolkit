@@ -28,7 +28,9 @@ library
       Functional.Sudoku
       Functional.Sudoku.Catalogue
       Functional.Algebra
-  build-depends: base >=4.14 && <5
+  build-depends:
+      base >=4.14 && <5,
+      containers >=0.6 && <0.8
 
 executable fp-toolkit
   import: warnings

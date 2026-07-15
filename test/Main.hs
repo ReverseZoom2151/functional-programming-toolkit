@@ -49,7 +49,8 @@ catalogueTests = do
   expectedEntries <- check "Puzzle catalogue contains the curated puzzles" (map puzzleName catalogue == ["easy", "hard"])
   caseInsensitive <- check "Puzzle catalogue lookup ignores case" (case lookupPuzzle "HARD" of Just puzzle -> puzzleName puzzle == "hard"; Nothing -> False)
   descriptionSearch <- check "Puzzle catalogue searches descriptions" (map puzzleName (findPuzzles "starter") == ["easy"])
-  pure (expectedEntries && caseInsensitive && descriptionSearch)
+  prefixSearch <- check "Puzzle catalogue supports indexed name prefixes" (map puzzleName (findPuzzles "ha") == ["hard"])
+  pure (expectedEntries && caseInsensitive && descriptionSearch && prefixSearch)
 
 algebraTests :: IO Bool
 algebraTests = do
