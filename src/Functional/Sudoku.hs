@@ -1,0 +1,92 @@
+-- | A pure, backtracking Sudoku solver for ordinary 9x9 puzzles.
+module Functional.Sudoku
+  ( Board
+  , parseBoard
+  , solve
+  , renderBoard
+  ) where
+
+import Data.Char (isSpace, digitToInt)
+import Data.List (intercalate, minimumBy, (\\))
+import Data.Ord (comparing)
+
+type Cell = Maybe Int
+newtype Board = Board [[Cell]] deriving (Eq)
+
+parseBoard :: String -> Either String Board
+parseBoard input = do
+  cells <- traverse parseCell symbols
+  if length cells /= 81
+    then Left "a Sudoku board must contain exactly 81 cells"
+    else Right (Board (chunksOf 9 cells))
+  where
+    symbols = filter (not . isSpace) input
+    parseCell '.' = Right Nothing
+    parseCell '0' = Right Nothing
+    parseCell c
+      | c >= '1' && c <= '9' = Right (Just (digitToInt c))
+      | otherwise = Left ("invalid Sudoku character: " ++ [c])
+
+solve :: Board -> [Board]
+solve board
+  | not (consistent board) = []
+  | otherwise = case openCells board of
+      [] -> [board]
+      choices -> concatMap solve [setCell board position value | value <- candidates board position]
+        where position = minimumBy (comparing (length . candidates board)) choices
+
+renderBoard :: Board -> String
+renderBoard (Board boardRows) = intercalate "\n" (concatMap renderBand (chunksOf 3 boardRows))
+  where
+    renderBand band = map renderRow band ++ ["------+-------+------"]
+    renderRow row = intercalate " | " (map (concatMap renderCell) (chunksOf 3 row))
+    renderCell Nothing = ". "
+    renderCell (Just n) = show n ++ " "
+
+consistent :: Board -> Bool
+consistent board = all noDuplicates (rows board ++ columns board ++ boxes board)
+  where
+    noDuplicates group = let values = [n | Just n <- group] in length values == length (unique values)
+
+unique :: Eq a => [a] -> [a]
+unique = foldr add []
+  where add x xs | x `elem` xs = xs | otherwise = x : xs
+
+openCells :: Board -> [(Int, Int)]
+openCells (Board rows') = [(r, c) | (r, row) <- zip [0 ..] rows', (c, Nothing) <- zip [0 ..] row]
+
+candidates :: Board -> (Int, Int) -> [Int]
+candidates board (r, c) = [1 .. 9] \\ used
+  where
+    used = [n | Just n <- rowAt board r ++ columnAt board c ++ boxAt board r c]
+
+setCell :: Board -> (Int, Int) -> Int -> Board
+setCell (Board rows') (r, c) value = Board (replaceAt r (replaceAt c (Just value) (rows' !! r)) rows')
+
+rows :: Board -> [[Cell]]
+rows (Board rows') = rows'
+
+columns :: Board -> [[Cell]]
+columns board = [[rowAt board r !! c | r <- [0 .. 8]] | c <- [0 .. 8]]
+
+columnAt :: Board -> Int -> [Cell]
+columnAt board c = [rowAt board r !! c | r <- [0 .. 8]]
+
+boxAt :: Board -> Int -> Int -> [Cell]
+boxAt board r c = [rowAt board r' !! c' | r' <- [baseRow .. baseRow + 2], c' <- [baseCol .. baseCol + 2]]
+  where
+    baseRow = r - r `mod` 3
+    baseCol = c - c `mod` 3
+
+boxes :: Board -> [[Cell]]
+boxes board = [boxAt board r c | r <- [0, 3, 6], c <- [0, 3, 6]]
+
+rowAt :: Board -> Int -> [Cell]
+rowAt (Board rows') r = rows' !! r
+
+replaceAt :: Int -> a -> [a] -> [a]
+replaceAt index replacement values = take index values ++ replacement : drop (index + 1) values
+
+chunksOf :: Int -> [a] -> [[a]]
+chunksOf _ [] = []
+chunksOf n xs = take n xs : chunksOf n (drop n xs)

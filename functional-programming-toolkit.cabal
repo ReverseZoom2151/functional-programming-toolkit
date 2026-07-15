@@ -1,0 +1,47 @@
+cabal-version:      3.0
+name:               functional-programming-toolkit
+version:            0.1.0.0
+synopsis:           A small, tested showcase of functional programming in Haskell
+description:
+  A terminal toolkit built from the strongest examples in the COMS10016
+  Functional Programming course archive: Blackjack, Sudoku solving, and
+  symbolic polynomial simplification.
+category:           Education
+build-type:         Simple
+license:             BSD-3-Clause
+author:              ReverseZoom2151
+maintainer:          ReverseZoom2151
+
+source-repository head
+  type: git
+  location: https://github.com/ReverseZoom2151/coms10016-functional-programming.git
+
+common warnings
+  ghc-options: -Wall -Wcompat -Wincomplete-uni-patterns
+  default-language: Haskell2010
+
+library
+  import: warnings
+  hs-source-dirs: src
+  exposed-modules:
+      Functional.Blackjack
+      Functional.Sudoku
+      Functional.Algebra
+  build-depends: base >=4.14 && <5
+
+executable fp-toolkit
+  import: warnings
+  hs-source-dirs: app
+  main-is: Main.hs
+  build-depends:
+      base >=4.14 && <5,
+      functional-programming-toolkit
+
+test-suite toolkit-tests
+  import: warnings
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+      base >=4.14 && <5,
+      functional-programming-toolkit
