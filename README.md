@@ -2,7 +2,7 @@
 
 # Functional Programming Toolkit
 
-### A CLI Haskell toolkit for games, constraint solving, and symbolic algebra.
+### A Haskell CLI toolkit for exploring pure functional models through games, puzzles, and symbolic computation.
 
 [![Haskell CI](https://github.com/ReverseZoom2151/functional-programming-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/ReverseZoom2151/functional-programming-toolkit/actions/workflows/ci.yml)
 
