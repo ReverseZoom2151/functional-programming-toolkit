@@ -6,3 +6,5 @@ dist-newstyle/
 # Local archive of the original course materials. Kept on disk for reference,
 # but excluded from the maintained toolkit and from future commits.
 resources/
+.superdesign
+.claude/
