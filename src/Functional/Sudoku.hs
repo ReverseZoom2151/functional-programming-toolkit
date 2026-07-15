@@ -1,12 +1,14 @@
 -- | A pure, backtracking Sudoku solver for ordinary 9x9 puzzles.
 module Functional.Sudoku
   ( Board
+  , Hint (..)
   , SolutionSummary (..)
   , SolverDiagnostics (..)
   , parseBoard
   , solve
   , solveUpTo
   , diagnose
+  , nextHint
   , renderBoard
   ) where
 
@@ -16,6 +18,15 @@ import Data.Ord (comparing)
 
 type Cell = Maybe Int
 newtype Board = Board [[Cell]] deriving (Eq)
+
+-- | The most constrained unresolved cell in a valid board. Coordinates are
+-- one-based so they can be shown directly to a terminal user.
+data Hint = Hint
+  { hintRow :: Int
+  , hintColumn :: Int
+  , hintCandidates :: [Int]
+  }
+  deriving (Eq, Show)
 
 -- | The meaningful result of looking for up to two solutions.
 data SolutionSummary = NoSolution | UniqueSolution | MultipleSolutions
@@ -66,6 +77,17 @@ diagnose board = case solveUpTo 2 board of
   [] -> SolverDiagnostics NoSolution 0 False
   [_] -> SolverDiagnostics UniqueSolution 1 False
   _ -> SolverDiagnostics MultipleSolutions 2 True
+
+-- | Suggest the next search decision by choosing the empty cell with the
+-- fewest legal candidates. A solved or inconsistent board has no hint.
+nextHint :: Board -> Maybe Hint
+nextHint board
+  | not (consistent board) = Nothing
+  | otherwise = case openCells board of
+      [] -> Nothing
+      positions -> Just (Hint (row + 1) (column + 1) (candidates board position))
+        where
+          position@(row, column) = minimumBy (comparing (length . candidates board)) positions
 
 renderBoard :: Board -> String
 renderBoard (Board boardRows) = intercalate "\n" (concatMap renderBand (chunksOf 3 boardRows))

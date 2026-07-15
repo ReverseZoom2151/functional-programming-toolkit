@@ -49,6 +49,11 @@ run ["sudoku", "--diagnose", fileName] = do
   case parseBoard input of
     Left message -> failWith message
     Right board -> solveWithDiagnostics board
+run ["sudoku", "--hint", fileName] = do
+  input <- readFile fileName
+  case parseBoard input of
+    Left message -> failWith message
+    Right board -> printHint board
 run ["sudoku", fileName] = do
   input <- readFile fileName
   case parseBoard input of
@@ -68,6 +73,7 @@ run _ = do
   putStrLn "  puzzle NAME"
   putStrLn "  sudoku PUZZLE_FILE"
   putStrLn "  sudoku --diagnose PUZZLE_FILE"
+  putStrLn "  sudoku --hint PUZZLE_FILE"
   exitFailure
 
 failWith :: String -> IO a
@@ -158,3 +164,12 @@ suffix :: SolverDiagnostics -> String
 suffix diagnostics
   | searchLimitReached diagnostics = "+ (search capped at two)"
   | otherwise = ""
+
+printHint :: Board -> IO ()
+printHint board = case nextHint board of
+  Nothing -> putStrLn "No next hint: the board is solved or inconsistent."
+  Just hint -> putStrLn
+    ( "Next decision: row " ++ show (hintRow hint)
+   ++ ", column " ++ show (hintColumn hint)
+   ++ " accepts " ++ show (hintCandidates hint)
+    )

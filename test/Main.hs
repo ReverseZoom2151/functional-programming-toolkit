@@ -34,7 +34,8 @@ sudokuTests = case parseBoard easyPuzzle of
     inconsistent <- check "Sudoku solver rejects conflicting clues" (case parseBoard (replicate 81 '1') of Right broken -> null (solve broken); Left _ -> False)
     noSolution <- check "Sudoku diagnostics classify an impossible puzzle" (case parseBoard (replicate 81 '1') of Right broken -> solutionSummary (diagnose broken) == NoSolution; Left _ -> False)
     ambiguous <- check "Sudoku diagnostics cap an ambiguous search at two solutions" (case parseBoard ambiguousPuzzle of Right puzzle -> diagnose puzzle == SolverDiagnostics MultipleSolutions 2 True; Left _ -> False)
-    pure (solved && unique && malformed && inconsistent && noSolution && ambiguous)
+    hint <- check "Sudoku hint selects the most constrained unresolved cell" (nextHint board == Just (Hint 5 5 [5]))
+    pure (solved && unique && malformed && inconsistent && noSolution && ambiguous && hint)
   where
     easyPuzzle = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
     solvedPuzzle = "534678912672195348198342567859761423426853791713924856961537284287419635345286179"
