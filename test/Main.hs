@@ -68,7 +68,9 @@ algebraTests = do
   substitution <- check "Substitution composes expressions" (eval 3 (substitute (Add Variable (Constant 1)) (Power 2)) == 16)
   expansion <- check "Expansion produces the canonical polynomial form" (renderExpr (expand (Multiply (Add Variable (Constant 1)) (Add Variable (Constant 1)))) == "((1 + (2 * x)) + x^2)")
   factorisation <- check "Factorisation extracts a common monomial without changing meaning" (let original = Add (Multiply (Constant 6) (Power 3)) (Multiply (Constant 9) (Power 2)) in eval 4 (factor original) == eval 4 original && renderExpr (factor original) == "((3 * x^2) * (3 + (2 * x)))")
-  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution && expansion && factorisation)
+  quadraticFactorisation <- check "Factorisation finds exact integer roots of quadratics" (let original = Add (Add (Power 2) (Multiply (Constant (-5)) Variable)) (Constant 6) in eval 7 (factor original) == eval 7 original)
+  multiVariable <- check "Algebra parses, expands, and evaluates named variables" (case parseExpr "(x + y) * (x + y)" of Right parsed -> evalWith [("x", 2), ("y", 3)] (expand parsed) == Right 25 && evalWith [("x", 2), ("y", 3)] (differentiate parsed) == Right 10; Left _ -> False)
+  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution && expansion && factorisation && quadraticFactorisation && multiVariable)
 
 tetrisTests :: IO Bool
 tetrisTests = do

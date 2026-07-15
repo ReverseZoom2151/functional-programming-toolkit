@@ -40,6 +40,13 @@ run ("factor":source) = withExpression source $ \expression ->
 run ("evaluate":value:source) = case reads value of
   [(x, "")] -> withExpression source $ \expression -> print (eval x expression)
   _ -> failWith "VALUE must be an integer"
+run ("evaluate-with":arguments) = case break (== "--") arguments of
+  (bindingSource, "--":expressionSource) -> case traverse parseBinding bindingSource of
+    Left message -> failWith message
+    Right bindings -> withExpression expressionSource $ \expression -> case evalWith bindings expression of
+      Left message -> failWith message
+      Right value -> print value
+  _ -> failWith "use evaluate-with NAME=VALUE ... -- EXPRESSION"
 run ["repl"] = algebraRepl
 run ["puzzles"] = printPuzzles catalogue
 run ("puzzles":query) = printPuzzles (findPuzzles (unwords query))
@@ -89,6 +96,7 @@ run _ = do
   putStrLn "  expand EXPRESSION"
   putStrLn "  factor EXPRESSION"
   putStrLn "  evaluate VALUE EXPRESSION"
+  putStrLn "  evaluate-with NAME=VALUE ... -- EXPRESSION"
   putStrLn "  repl"
   putStrLn "  puzzles [QUERY]"
   putStrLn "  puzzle NAME"
@@ -171,6 +179,14 @@ printExpression :: String -> (Expr -> IO ()) -> IO ()
 printExpression source action = case parseExpr source of
   Left message -> putStrLn ("Error: " ++ message)
   Right expression -> action expression
+
+parseBinding :: String -> Either String (String, Integer)
+parseBinding source = case break (== '=') source of
+  ([], _) -> Left "variable bindings need a name"
+  (_, []) -> Left "variable bindings must use NAME=VALUE"
+  (name, _:value) -> case reads value of
+    [(number, "")] -> Right (name, number)
+    _ -> Left ("invalid value for " ++ name)
 
 printPuzzles :: [Puzzle] -> IO ()
 printPuzzles [] = putStrLn "No catalogue puzzles match that query."
