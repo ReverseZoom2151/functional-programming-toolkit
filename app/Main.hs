@@ -58,6 +58,21 @@ run ["sudoku", "--hint", fileName] = do
   case parseBoard input of
     Left message -> failWith message
     Right board -> printHint board
+run ["sudoku", "--rate", fileName] = do
+  input <- readFile fileName
+  case parseBoard input of
+    Left message -> failWith message
+    Right board -> print (analyseDifficulty board)
+run ["sudoku", "--import", fileName] = do
+  input <- readFile fileName
+  case parseBoard input of
+    Left message -> failWith message
+    Right board -> putStrLn (renderBoard board)
+run ["sudoku", "--export", sourceFile, destinationFile] = do
+  input <- readFile sourceFile
+  case parseBoard input of
+    Left message -> failWith message
+    Right board -> writeFile destinationFile (exportBoard board ++ "\n")
 run ["sudoku", fileName] = do
   input <- readFile fileName
   case parseBoard input of
@@ -80,6 +95,9 @@ run _ = do
   putStrLn "  sudoku PUZZLE_FILE"
   putStrLn "  sudoku --diagnose PUZZLE_FILE"
   putStrLn "  sudoku --hint PUZZLE_FILE"
+  putStrLn "  sudoku --rate PUZZLE_FILE"
+  putStrLn "  sudoku --import PUZZLE_FILE"
+  putStrLn "  sudoku --export INPUT_FILE OUTPUT_FILE"
   exitFailure
 
 failWith :: String -> IO a

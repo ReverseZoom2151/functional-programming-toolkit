@@ -2,13 +2,17 @@
 module Functional.Puzzles.Sudoku
   ( Board
   , Hint (..)
+  , Difficulty (..)
+  , DifficultyReport (..)
   , SolutionSummary (..)
   , SolverDiagnostics (..)
   , parseBoard
+  , exportBoard
   , solve
   , solveUpTo
   , diagnose
   , nextHint
+  , analyseDifficulty
   , renderBoard
   ) where
 
@@ -41,6 +45,19 @@ data SolverDiagnostics = SolverDiagnostics
   }
   deriving (Eq, Show)
 
+-- | A solver-derived difficulty band. The band is based on actual branching
+-- rather than a hand-maintained label in the catalogue.
+data Difficulty = Beginner | Intermediate | Advanced | Expert
+  deriving (Eq, Ord, Show)
+
+data DifficultyReport = DifficultyReport
+  { difficulty :: Difficulty
+  , emptyCells :: Int
+  , searchNodes :: Int
+  , branchingDecisions :: Int
+  }
+  deriving (Eq, Show)
+
 parseBoard :: String -> Either String Board
 parseBoard input = do
   cells <- traverse parseCell symbols
@@ -54,6 +71,15 @@ parseBoard input = do
     parseCell c
       | c >= '1' && c <= '9' = Right (Just (digitToInt c))
       | otherwise = Left ("invalid Sudoku character: " ++ [c])
+
+-- | Export a board as exactly 81 compact characters. Empty cells are dots,
+-- making the result suitable for files, version control, and round-tripping
+-- through 'parseBoard'.
+exportBoard :: Board -> String
+exportBoard (Board boardRows) = concatMap (map renderCell) boardRows
+  where
+    renderCell Nothing = '.'
+    renderCell (Just value) = head (show value)
 
 solve :: Board -> [Board]
 solve = solveUpTo maxBound
@@ -88,6 +114,33 @@ nextHint board
       positions -> Just (Hint (row + 1) (column + 1) (candidates board position))
         where
           position@(row, column) = minimumBy (comparing (length . candidates board)) positions
+
+-- | Estimate difficulty by measuring the first successful solve path. A
+-- forced move has one candidate; a branching decision has more than one.
+analyseDifficulty :: Board -> DifficultyReport
+analyseDifficulty board = DifficultyReport band blanks nodes decisions
+  where
+    blanks = length (openCells board)
+    (_, nodes, decisions) = searchWork board
+    band
+      | decisions == 0 = Beginner
+      | decisions <= 5 && nodes <= 100 = Intermediate
+      | decisions <= 30 && nodes <= 1000 = Advanced
+      | otherwise = Expert
+
+searchWork :: Board -> (Maybe Board, Int, Int)
+searchWork board
+  | not (consistent board) = (Nothing, 1, 0)
+  | otherwise = case openCells board of
+      [] -> (Just board, 1, 0)
+      positions -> tryCandidates position (candidates board position) 1 decision
+        where
+          position = minimumBy (comparing (length . candidates board)) positions
+          decision = if length (candidates board position) > 1 then 1 else 0
+          tryCandidates _ [] nodes decisions = (Nothing, nodes, decisions)
+          tryCandidates cell (value:values) nodes decisions = case searchWork (setCell board cell value) of
+            (Just solution, childNodes, childDecisions) -> (Just solution, nodes + childNodes, decisions + childDecisions)
+            (Nothing, childNodes, childDecisions) -> tryCandidates cell values (nodes + childNodes) (decisions + childDecisions)
 
 renderBoard :: Board -> String
 renderBoard (Board boardRows) = intercalate "\n" (concatMap renderBand (chunksOf 3 boardRows))
