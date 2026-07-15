@@ -1,8 +1,12 @@
 -- | A pure, backtracking Sudoku solver for ordinary 9x9 puzzles.
 module Functional.Sudoku
   ( Board
+  , SolutionSummary (..)
+  , SolverDiagnostics (..)
   , parseBoard
   , solve
+  , solveUpTo
+  , diagnose
   , renderBoard
   ) where
 
@@ -12,6 +16,19 @@ import Data.Ord (comparing)
 
 type Cell = Maybe Int
 newtype Board = Board [[Cell]] deriving (Eq)
+
+-- | The meaningful result of looking for up to two solutions.
+data SolutionSummary = NoSolution | UniqueSolution | MultipleSolutions
+  deriving (Eq, Show)
+
+-- | A bounded, user-facing view of the solver's result. When
+-- 'searchLimitReached' is true, 'solutionsFound' is a lower bound.
+data SolverDiagnostics = SolverDiagnostics
+  { solutionSummary :: SolutionSummary
+  , solutionsFound :: Int
+  , searchLimitReached :: Bool
+  }
+  deriving (Eq, Show)
 
 parseBoard :: String -> Either String Board
 parseBoard input = do
@@ -28,12 +45,27 @@ parseBoard input = do
       | otherwise = Left ("invalid Sudoku character: " ++ [c])
 
 solve :: Board -> [Board]
-solve board
+solve = solveUpTo maxBound
+
+-- | Find at most the requested number of solutions. A positive bound makes
+-- this suitable for uniqueness checks without exhaustively enumerating every
+-- solution of an ambiguous puzzle.
+solveUpTo :: Int -> Board -> [Board]
+solveUpTo limit _ | limit <= 0 = []
+solveUpTo limit board
   | not (consistent board) = []
   | otherwise = case openCells board of
       [] -> [board]
-      choices -> concatMap solve [setCell board position value | value <- candidates board position]
+      choices -> take limit (concatMap (solveUpTo limit . setCell board position) (candidates board position))
         where position = minimumBy (comparing (length . candidates board)) choices
+
+-- | Determine whether a puzzle has no solution, exactly one solution, or at
+-- least two solutions. Search is deliberately capped at two solutions.
+diagnose :: Board -> SolverDiagnostics
+diagnose board = case solveUpTo 2 board of
+  [] -> SolverDiagnostics NoSolution 0 False
+  [_] -> SolverDiagnostics UniqueSolution 1 False
+  _ -> SolverDiagnostics MultipleSolutions 2 True
 
 renderBoard :: Board -> String
 renderBoard (Board boardRows) = intercalate "\n" (concatMap renderBand (chunksOf 3 boardRows))

@@ -3,6 +3,7 @@ module Main where
 import Functional.Algebra
 import Functional.Blackjack
 import Functional.Sudoku
+import Functional.Sudoku.Catalogue
 import System.CPUTime (getCPUTime)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
@@ -34,6 +35,18 @@ run ("simplify":source) = withExpression source $ \expression ->
 run ("evaluate":value:source) = case reads value of
   [(x, "")] -> withExpression source $ \expression -> print (eval x expression)
   _ -> failWith "VALUE must be an integer"
+run ["puzzles"] = printPuzzles catalogue
+run ("puzzles":query) = printPuzzles (findPuzzles (unwords query))
+run ("puzzle":name) = case lookupPuzzle (unwords name) of
+  Nothing -> failWith "no catalogue puzzle has that exact name; try `puzzles`"
+  Just puzzle -> do
+    putStrLn (puzzleName puzzle ++ ": " ++ puzzleDescription puzzle)
+    solveWithDiagnostics (puzzleBoard puzzle)
+run ["sudoku", "--diagnose", fileName] = do
+  input <- readFile fileName
+  case parseBoard input of
+    Left message -> failWith message
+    Right board -> solveWithDiagnostics board
 run ["sudoku", fileName] = do
   input <- readFile fileName
   case parseBoard input of
@@ -48,7 +61,10 @@ run _ = do
   putStrLn "  simplify-demo"
   putStrLn "  simplify EXPRESSION"
   putStrLn "  evaluate VALUE EXPRESSION"
+  putStrLn "  puzzles [QUERY]"
+  putStrLn "  puzzle NAME"
   putStrLn "  sudoku PUZZLE_FILE"
+  putStrLn "  sudoku --diagnose PUZZLE_FILE"
   exitFailure
 
 failWith :: String -> IO a
@@ -90,3 +106,24 @@ announceResult (result, player, dealer) = do
   putStrLn ("Player: " ++ show player ++ " (" ++ show (handValue player) ++ ")")
   putStrLn ("Dealer: " ++ show dealer ++ " (" ++ show (handValue dealer) ++ ")")
   putStrLn ("Winner: " ++ show result)
+
+printPuzzles :: [Puzzle] -> IO ()
+printPuzzles [] = putStrLn "No catalogue puzzles match that query."
+printPuzzles puzzles = mapM_ printPuzzle puzzles
+
+printPuzzle :: Puzzle -> IO ()
+printPuzzle puzzle = putStrLn (puzzleName puzzle ++ " — " ++ puzzleDescription puzzle)
+
+solveWithDiagnostics :: Board -> IO ()
+solveWithDiagnostics board = do
+  let diagnostics = diagnose board
+  putStrLn ("Solutions: " ++ show (solutionsFound diagnostics) ++ suffix diagnostics)
+  putStrLn ("Classification: " ++ show (solutionSummary diagnostics))
+  case solveUpTo 1 board of
+    [] -> pure ()
+    solution : _ -> putStrLn (renderBoard solution)
+
+suffix :: SolverDiagnostics -> String
+suffix diagnostics
+  | searchLimitReached diagnostics = "+ (search capped at two)"
+  | otherwise = ""
