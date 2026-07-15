@@ -267,7 +267,16 @@ perfectSquare value
   | value < 0 = Nothing
   | root * root == value = Just root
   | otherwise = Nothing
-  where root = floor (sqrt (fromIntegral value :: Double))
+  where root = integerSquareRoot value
+
+integerSquareRoot :: Integer -> Integer
+integerSquareRoot value = search 0 (value + 1)
+  where
+    search lower upper
+      | upper - lower <= 1 = lower
+      | midpoint * midpoint <= value = search midpoint upper
+      | otherwise = search lower midpoint
+      where midpoint = (lower + upper) `div` 2
 
 usesOnlyX :: Expr -> Bool
 usesOnlyX expression = case expression of
