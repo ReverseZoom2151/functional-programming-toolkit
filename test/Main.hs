@@ -4,13 +4,14 @@ import Functional.Algebra
 import Functional.Blackjack
 import Functional.Sudoku
 import Functional.Sudoku.Catalogue
+import Functional.Tetris
 import Data.List (sort)
 import System.Exit (exitFailure)
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, Testable, choose, frequency, isSuccess, quickCheckResult, sized)
 
 main :: IO ()
 main = do
-  results <- sequence [blackjackTests, sudokuTests, catalogueTests, algebraTests, propertyTests]
+  results <- sequence [blackjackTests, sudokuTests, catalogueTests, algebraTests, tetrisTests, propertyTests]
   if and results then putStrLn "All toolkit tests passed." else exitFailure
 
 blackjackTests :: IO Bool
@@ -63,6 +64,16 @@ algebraTests = do
   derivative <- check "Differentiation returns a canonical derivative" (renderExpr (differentiate (Add (Power 3) (Multiply (Constant 2) Variable))) == "(2 + (3 * x^2))")
   substitution <- check "Substitution composes expressions" (eval 3 (substitute (Add Variable (Constant 1)) (Power 2)) == 16)
   pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution)
+
+tetrisTests :: IO Bool
+tetrisTests = do
+  let initial = newGame [0]
+      afterDrop = step Drop initial
+      movedLeft = foldl (\game action -> step action game) initial (replicate 20 Leftward)
+  dropLocksOnlyActivePiece <- check "Tetris hard drop locks one piece and spawns exactly one successor" (not (gameOver afterDrop) && length (filter (== '#') (renderGame afterDrop)) == 8)
+  dropDoesNotScoreWithoutLine <- check "Tetris does not score a hard drop without a cleared line" (score afterDrop == 0)
+  movementStopsAtWall <- check "Tetris prevents movement through the left wall" (renderGame (step Leftward movedLeft) == renderGame movedLeft)
+  pure (dropLocksOnlyActivePiece && dropDoesNotScoreWithoutLine && movementStopsAtWall)
 
 propertyTests :: IO Bool
 propertyTests = do

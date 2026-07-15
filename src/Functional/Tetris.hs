@@ -57,7 +57,9 @@ descend (Game board piece supply points done)
   where lowered = translate (0, 1) piece
 
 dropPiece :: Game -> Game
-dropPiece game = let next = descend game in if next == game then game else dropPiece next
+dropPiece game@(Game board piece _ _ _)
+  | valid board (translate (0, 1) piece) = dropPiece (descend game)
+  | otherwise = descend game
 
 spawn :: (Board, Int) -> [Kind] -> Int -> Game
 spawn (board, cleared) (kind:rest) points = Game board (Piece kind (3, 0) 0) rest (points + 100 * cleared * cleared) blocked
