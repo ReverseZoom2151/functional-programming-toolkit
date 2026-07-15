@@ -7,6 +7,7 @@ import Functional.Sudoku.Catalogue
 import System.CPUTime (getCPUTime)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
+import System.IO (hFlush, stdout)
 
 main :: IO ()
 main = getArgs >>= run
@@ -35,6 +36,7 @@ run ("simplify":source) = withExpression source $ \expression ->
 run ("evaluate":value:source) = case reads value of
   [(x, "")] -> withExpression source $ \expression -> print (eval x expression)
   _ -> failWith "VALUE must be an integer"
+run ["repl"] = algebraRepl
 run ["puzzles"] = printPuzzles catalogue
 run ("puzzles":query) = printPuzzles (findPuzzles (unwords query))
 run ("puzzle":name) = case lookupPuzzle (unwords name) of
@@ -61,6 +63,7 @@ run _ = do
   putStrLn "  simplify-demo"
   putStrLn "  simplify EXPRESSION"
   putStrLn "  evaluate VALUE EXPRESSION"
+  putStrLn "  repl"
   putStrLn "  puzzles [QUERY]"
   putStrLn "  puzzle NAME"
   putStrLn "  sudoku PUZZLE_FILE"
@@ -106,6 +109,34 @@ announceResult (result, player, dealer) = do
   putStrLn ("Player: " ++ show player ++ " (" ++ show (handValue player) ++ ")")
   putStrLn ("Dealer: " ++ show dealer ++ " (" ++ show (handValue dealer) ++ ")")
   putStrLn ("Winner: " ++ show result)
+
+algebraRepl :: IO ()
+algebraRepl = do
+  putStrLn "Algebra REPL — enter an expression to simplify; :help for commands."
+  loop
+  where
+    loop = do
+      putStr "algebra> "
+      hFlush stdout
+      input <- getLine
+      case words input of
+        [":quit"] -> putStrLn "Goodbye."
+        [":help"] -> do
+          putStrLn "EXPR            simplify an expression"
+          putStrLn ":eval N EXPR    evaluate EXPR at x = N"
+          putStrLn ":diff EXPR      differentiate EXPR"
+          putStrLn ":quit            leave the REPL"
+          loop
+        (":eval":value:source) -> case reads value of
+          [(x, "")] -> printExpression (unwords source) (print . eval x) >> loop
+          _ -> putStrLn "N must be an integer." >> loop
+        (":diff":source) -> printExpression (unwords source) (putStrLn . renderExpr . differentiate) >> loop
+        _ -> printExpression input (putStrLn . renderExpr . simplify) >> loop
+
+printExpression :: String -> (Expr -> IO ()) -> IO ()
+printExpression source action = case parseExpr source of
+  Left message -> putStrLn ("Error: " ++ message)
+  Right expression -> action expression
 
 printPuzzles :: [Puzzle] -> IO ()
 printPuzzles [] = putStrLn "No catalogue puzzles match that query."

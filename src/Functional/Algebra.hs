@@ -4,6 +4,8 @@ module Functional.Algebra
   , Polynomial
   , eval
   , simplify
+  , differentiate
+  , substitute
   , toPolynomial
   , fromPolynomial
   , renderExpr
@@ -32,6 +34,21 @@ eval x expression = case expression of
 
 simplify :: Expr -> Expr
 simplify = fromPolynomial . toPolynomial
+
+-- | Differentiate an expression with respect to @x@ and return its canonical
+-- polynomial form.
+differentiate :: Expr -> Expr
+differentiate = fromPolynomial . derivative . toPolynomial
+
+-- | Replace every occurrence of @x@ in an expression with another expression.
+-- This is useful for composition as well as symbolic exploration in the REPL.
+substitute :: Expr -> Expr -> Expr
+substitute replacement expression = case expression of
+  Constant n -> Constant n
+  Variable -> replacement
+  Add left right -> Add (substitute replacement left) (substitute replacement right)
+  Multiply left right -> Multiply (substitute replacement left) (substitute replacement right)
+  Power n -> powerOf replacement n
 
 toPolynomial :: Expr -> Polynomial
 toPolynomial expression = case expression of
@@ -137,3 +154,14 @@ multiply (Polynomial left) (Polynomial right) = normalise coefficients
 
 normalise :: [Integer] -> Polynomial
 normalise = Polynomial . reverse . dropWhile (== 0) . reverse
+
+derivative :: Polynomial -> Polynomial
+derivative (Polynomial []) = Polynomial []
+derivative (Polynomial (_ : coefficients)) = normalise
+  [ fromIntegral power * coefficient
+  | (power, coefficient) <- zip [1 :: Int ..] coefficients
+  ]
+
+powerOf :: Expr -> Int -> Expr
+powerOf _ 0 = Constant 1
+powerOf expression n = foldr1 Multiply (replicate n expression)

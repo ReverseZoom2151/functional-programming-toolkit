@@ -58,7 +58,9 @@ algebraTests = do
   parserRoundTrip <- check "Parser understands polynomial syntax" (case parseExpr "2 * x^2 + x - 3" of Right parsed -> eval 4 parsed == 33; Left _ -> False)
   invalidSyntax <- check "Parser rejects invalid syntax" (case parseExpr "x ^" of Left _ -> True; Right _ -> False)
   normalisesProduct <- check "Simplification combines polynomial products" (renderExpr (simplify (Multiply Variable Variable)) == "x^2")
-  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct)
+  derivative <- check "Differentiation returns a canonical derivative" (renderExpr (differentiate (Add (Power 3) (Multiply (Constant 2) Variable))) == "(2 + (3 * x^2))")
+  substitution <- check "Substitution composes expressions" (eval 3 (substitute (Add Variable (Constant 1)) (Power 2)) == 16)
+  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution)
 
 propertyTests :: IO Bool
 propertyTests = do
@@ -111,11 +113,12 @@ prop_renderParsePreservesEvaluation (SmallExpr expression) (SmallInteger value) 
     Right parsed -> eval value parsed == eval value expression
 
 prop_solveUpToRespectsLimit :: SmallInteger -> Bool
-prop_solveUpToRespectsLimit (SmallInteger limit) =
-  length (solveUpTo bound easyBoard) <= bound
+prop_solveUpToRespectsLimit (SmallInteger limit) = case parseBoard easyPuzzle of
+  Left _ -> False
+  Right easyBoard -> length (solveUpTo bound easyBoard) <= bound
   where
     bound = fromInteger (abs limit `mod` 4)
-    Right easyBoard = parseBoard "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+    easyPuzzle = "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
 
 runProperty :: Testable property => String -> property -> IO Bool
 runProperty label property = do
