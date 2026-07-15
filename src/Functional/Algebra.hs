@@ -7,7 +7,10 @@ module Functional.Algebra
   , toPolynomial
   , fromPolynomial
   , renderExpr
+  , parseExpr
   ) where
+
+import Data.Char (isDigit, isSpace)
 
 data Expr
   = Constant Integer
@@ -57,6 +60,68 @@ renderExpr expression = case expression of
   Power n -> "x^" ++ show n
   Add left right -> "(" ++ renderExpr left ++ " + " ++ renderExpr right ++ ")"
   Multiply left right -> "(" ++ renderExpr left ++ " * " ++ renderExpr right ++ ")"
+
+-- | Parse a small expression language containing integers, @x@, @+@, @-@,
+-- @*@, parentheses, and powers such as @x^2@. Whitespace is ignored.
+parseExpr :: String -> Either String Expr
+parseExpr input = do
+  (expression, remaining) <- parseSum (filter (not . isSpace) input)
+  if null remaining
+    then Right expression
+    else Left ("unexpected input: " ++ remaining)
+
+type Parser a = String -> Either String (a, String)
+
+parseSum :: Parser Expr
+parseSum input = do
+  (first, rest) <- parseProduct input
+  go first rest
+  where
+    go left ('+':rest) = do
+      (right, remaining) <- parseProduct rest
+      go (Add left right) remaining
+    go left ('-':rest) = do
+      (right, remaining) <- parseProduct rest
+      go (Add left (Multiply (Constant (-1)) right)) remaining
+    go left rest = Right (left, rest)
+
+parseProduct :: Parser Expr
+parseProduct input = do
+  (first, rest) <- parseFactor input
+  go first rest
+  where
+    go left ('*':rest) = do
+      (right, remaining) <- parseFactor rest
+      go (Multiply left right) remaining
+    go left rest = Right (left, rest)
+
+parseFactor :: Parser Expr
+parseFactor [] = Left "expected an expression"
+parseFactor ('-':rest) = do
+  (expression, remaining) <- parseFactor rest
+  Right (Multiply (Constant (-1)) expression, remaining)
+parseFactor ('x':rest) = parsePower rest
+parseFactor ('(':rest) = do
+  (expression, remaining) <- parseSum rest
+  case remaining of
+    ')':after -> Right (expression, after)
+    _ -> Left "expected ')'"
+parseFactor input@(first:_)
+  | isDigit first = Right (Constant (read digits), remaining)
+  | otherwise = Left ("expected an expression, found '" ++ [first] ++ "'")
+  where
+    (digits, remaining) = span isDigit input
+
+parsePower :: Parser Expr
+parsePower ('^':rest) = do
+  (digits, remaining) <- parseDigits rest
+  Right (Power (read digits), remaining)
+parsePower rest = Right (Variable, rest)
+
+parseDigits :: Parser String
+parseDigits input = case span isDigit input of
+  ([], _) -> Left "expected a non-negative exponent after '^'"
+  result -> Right result
 
 add :: Polynomial -> Polynomial -> Polynomial
 add (Polynomial left) (Polynomial right) = normalise (zipWith (+) (pad left) (pad right))
