@@ -40,9 +40,9 @@ Every maintained domain has:
 | Domain | Core module | Terminal capability | Functional focus |
 | --- | --- | --- | --- |
 | Blackjack | `Functional.Games.Blackjack` | Interactive game and deterministic demo | Algebraic data types, seeded shuffle, state transitions |
-| Sudoku | `Functional.Puzzles.Sudoku`, `Functional.Puzzles.SudokuCatalogue` | File solving, diagnostics, hints, named-puzzle search | Constraint search, bounded exploration, `Map` indexing |
-| Algebra | `Functional.Symbolic.Algebra` | Expand/factor/evaluate commands and a REPL | Recursive ASTs, polynomial normal forms, substitution |
-| Tetris | `Functional.Games.Tetris` | Standalone `fp-tetris` game with preview and levels | Immutable board transitions, collision rules, rendering |
+| Sudoku | `Functional.Puzzles.Sudoku`, `Functional.Puzzles.SudokuCatalogue` | Interchange, solving, diagnostics, hints, ratings, and named-puzzle search | Constraint search, bounded exploration, measured branching |
+| Algebra | `Functional.Symbolic.Algebra` | Multivariate expansion, exact quadratic factoring, and evaluation | Recursive ASTs, monomial maps, substitution |
+| Tetris | `Functional.Games.Tetris` | Standalone `fp-tetris` with bagging, hold, and timed gravity | Immutable board transitions, collision rules, rendering |
 
 ## Capability map
 

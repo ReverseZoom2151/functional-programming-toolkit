@@ -15,9 +15,9 @@ pure, exposes a focused API, and is backed by examples plus property tests.
 | Domain | What you can do | Functional idea |
 | --- | --- | --- |
 | **Blackjack** | Play a terminal game or simulate deterministic rounds | Algebraic data types and explicit state transitions |
-| **Sudoku** | Solve four curated puzzles or files; diagnose solutions and request the next hint | Backtracking search with bounded exploration |
-| **Algebra** | Parse, evaluate, expand, factor, differentiate, and canonicalise expressions | Recursive ASTs and normal forms |
-| **Tetris** | Play a separately scoped terminal game with preview and levels | Pure state machine, collision checking, and rendering |
+| **Sudoku** | Import/export puzzles, solve, diagnose, hint, and rate difficulty | Backtracking search with bounded exploration |
+| **Algebra** | Expand, factor integer-root quadratics, differentiate, and evaluate named symbols | Recursive ASTs and multivariate normal forms |
+| **Tetris** | Play with preview, hold, timed gravity, levels, and seven-bag pieces | Pure state machine, collision checking, and rendering |
 
 ## Run it
 
@@ -61,9 +61,11 @@ cabal run fp-tetris
 ```
 
 The Tetris controls are `l`, `r`, `u` (rotate), `d` (down), `drop` or a space
-to hard-drop, and `q` to quit. The header previews the next tetromino and
-shows score, cleared lines, and level (which rises every ten lines). Its game
-rules are pure; the executable only owns the input loop and terminal rendering.
+to hard-drop, `hold` to store or swap one piece, and `q` to quit. The header
+previews the next tetromino and shows score, cleared lines, level, and hold
+slot. Gravity advances automatically and accelerates every ten cleared lines;
+new pieces come from deterministic seven-piece bags. Its game rules are pure;
+the executable only owns timing, input, and terminal rendering.
 
 ## Why it is functional
 
@@ -114,10 +116,14 @@ fp-toolkit puzzle NAME
 fp-toolkit sudoku PUZZLE_FILE
 fp-toolkit sudoku --diagnose PUZZLE_FILE
 fp-toolkit sudoku --hint PUZZLE_FILE
+fp-toolkit sudoku --rate PUZZLE_FILE
+fp-toolkit sudoku --import PUZZLE_FILE
+fp-toolkit sudoku --export INPUT_FILE OUTPUT_FILE
 fp-toolkit simplify EXPRESSION
 fp-toolkit expand EXPRESSION
 fp-toolkit factor EXPRESSION
 fp-toolkit evaluate VALUE EXPRESSION
+fp-toolkit evaluate-with NAME=VALUE ... -- EXPRESSION
 fp-toolkit repl
 fp-bench
 fp-tetris
@@ -126,8 +132,12 @@ fp-tetris
 Algebra input supports integers, `x`, `+`, `-`, `*`, parentheses, and
 non-negative powers of `x`. Quote expressions in your shell. In the REPL,
 use `:help`, `:expand EXPR`, `:factor EXPR`, `:eval N EXPR`, `:diff EXPR`, and
-`:quit`. `factor` extracts a common integer coefficient and shared power of
-`x`; `expand` emits the canonical polynomial form. `fp-bench` measures every
+`:quit`. Algebra accepts named symbols such as `y` and `velocity`; use
+`evaluate-with x=2 y=3 -- "x^2 + 2 * x * y + y^2"` to supply values. `factor` extracts a
+common monomial and factors quadratics with exact integer roots; `expand`
+emits a canonical multivariate polynomial form. Sudoku export writes a compact
+81-character dot format, and `--rate` reports the solver's measured branching
+work. `fp-bench` measures every
 catalogue puzzle using CPU time, so use it to compare solver changes on one
 machine rather than treating timings as universal results.
 
@@ -163,8 +173,10 @@ and checks 100 generated cases for each of these invariants:
 - Sudoku's bounded solver never exceeds its requested limit.
 
 Focused examples also cover Tetris hard-drop, line clearing, wall behaviour,
-preview, and level progression; Sudoku hints, diagnostics, and catalogue
-search; plus algebra differentiation, substitution, expansion, and factoring.
+preview, hold, gravity, seven-bag ordering, and level progression; Sudoku
+interchange, hints, diagnostics, ratings, and catalogue search; plus algebra
+differentiation, substitution, expansion, exact quadratic factoring, and
+named-variable evaluation.
 
 GitHub Actions runs the build and test suite on every push and pull request.
 

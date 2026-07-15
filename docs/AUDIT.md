@@ -30,10 +30,11 @@ The tests combine focused examples with generated properties:
 - Blackjack shuffling preserves every card;
 - algebra simplification and rendering preserve expression meaning;
 - Sudoku bounded search respects its requested limit;
-- Sudoku examples cover parser failure, classification, catalogue lookup, and
-  next-decision hints; and
-- Tetris examples cover hard-drop spawning, line clearing, preview, level
-  progression, and wall collision behaviour.
+- Sudoku examples cover parser failure, compact interchange, classification,
+  catalogue lookup, ratings, and next-decision hints; and
+- Tetris examples cover hard-drop spawning, seven-bag ordering, hold, timed
+  gravity, line clearing, preview, level progression, and wall collision
+  behaviour.
 
 GitHub Actions runs the build and test suite for pushes and pull requests.
 
