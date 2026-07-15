@@ -1,74 +1,150 @@
+<div align="center">
+
 # Functional Programming Toolkit
 
-A modern, buildable Haskell project grown from the most useful work in the
-COMS10016 Functional Programming course archive. It turns selected coursework
-into small, composable examples of pure modelling, search, and normalisation.
+### A small, tested Haskell playground for games, constraint solving, and symbolic algebra.
 
-## What is here
+[![Haskell CI](https://github.com/ReverseZoom2151/functional-programming-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/ReverseZoom2151/functional-programming-toolkit/actions/workflows/ci.yml)
 
-- `src/Functional/Blackjack.hs` — a pure Blackjack rules engine with correct
-  multi-ace scoring and deterministic rounds.
-- `src/Functional/Sudoku.hs` — a 9×9 Sudoku parser, bounded backtracking
-  solver, and uniqueness diagnostics.
-- `src/Functional/Sudoku/Catalogue.hs` — named, searchable built-in puzzles.
-- `src/Functional/Algebra.hs` — symbolic single-variable expressions and
-  canonical polynomial simplification.
-- `app/Main.hs` — a small command-line interface.
-- `test/Main.hs` — example and QuickCheck property tests for public behaviour
-  and invariants.
-- `resources/` — the original course archive, retained locally as reference
-  material but excluded from Git so the maintained project stays focused.
+</div>
 
-## Quick start
+`functional-programming-toolkit` is a buildable Haskell project with three
+complete, terminal-friendly domains. Each one keeps the important behaviour
+pure, exposes a focused API, and is backed by examples plus property tests.
 
-Install GHC and Cabal, then run:
+| Domain | What you can do | Functional idea |
+| --- | --- | --- |
+| **Blackjack** | Play a terminal game or simulate deterministic rounds | Algebraic data types and explicit state transitions |
+| **Sudoku** | Solve files or named puzzles; distinguish no/unique/multiple solutions | Backtracking search with bounded exploration |
+| **Algebra** | Parse, evaluate, and canonicalise single-variable expressions | Recursive ASTs and normal forms |
+
+## Run it
+
+You need [GHC](https://www.haskell.org/ghc/) and
+[Cabal](https://www.haskell.org/cabal/). Then:
 
 ```bash
+git clone https://github.com/ReverseZoom2151/functional-programming-toolkit.git
+cd functional-programming-toolkit
 cabal test
-cabal run fp-toolkit -- blackjack
-cabal run fp-toolkit -- blackjack-demo
-cabal run fp-toolkit -- simplify-demo
-cabal run fp-toolkit -- simplify "2 * x^2 + x - 3"
-cabal run fp-toolkit -- evaluate 4 "2 * x^2 + x - 3"
-cabal run fp-toolkit -- puzzles
-cabal run fp-toolkit -- puzzles starter
-cabal run fp-toolkit -- puzzle hard
-cabal run fp-toolkit -- sudoku examples/easy-sudoku.txt
-cabal run fp-toolkit -- sudoku --diagnose examples/easy-sudoku.txt
 ```
 
-## Design
-
-The public modules keep the interesting logic pure and isolate I/O in the CLI.
-That makes the rules engine, solver, and simplifier easy to test and reuse.
-See [the migration audit](docs/AUDIT.md) for the project boundary and the status
-of the historical material. [The concept map](docs/CONCEPT_MAP.md) explains
-which course ideas were promoted into the toolkit, which remain local reference
-material, and why.
-
-### Algebra input
-
-The algebra commands accept integers, `x`, `+`, `-`, `*`, parentheses, and
-non-negative powers of `x`, such as `2 * x^2 + x - 3`. Quote expressions in
-your shell so their spaces and operators are passed to the program unchanged.
-
-### Sudoku catalogue and diagnostics
-
-`puzzles` lists the curated catalogue; add a query to search names and
-descriptions. `puzzle NAME` solves a named puzzle and reports whether it has
-no solution, a unique solution, or multiple solutions. The `--diagnose` form
-provides the same bounded diagnostic for a puzzle file.
-
-## Development
+Try the interactive Blackjack game:
 
 ```bash
+cabal run fp-toolkit -- blackjack
+```
+
+Explore the bundled Sudoku catalogue and solve a puzzle:
+
+```bash
+cabal run fp-toolkit -- puzzles
+cabal run fp-toolkit -- puzzle hard
+```
+
+Work with an expression directly from the terminal:
+
+```bash
+cabal run fp-toolkit -- simplify "2 * x^2 + x - 3"
+# ((-3 + x) + (2 * x^2))
+
+cabal run fp-toolkit -- evaluate 4 "2 * x^2 + x - 3"
+# 33
+```
+
+## Why it is functional
+
+The executable is intentionally thin. It reads a command, calls a pure module,
+then prints a result. That keeps behaviour easy to understand, test, and reuse.
+
+For example, Sudoku diagnostics stop after two solutions—the exact amount of
+information needed to distinguish no solution, one solution, and many:
+
+```haskell
+diagnose :: Board -> SolverDiagnostics
+diagnose board = case solveUpTo 2 board of
+  []  -> SolverDiagnostics NoSolution 0 False
+  [_] -> SolverDiagnostics UniqueSolution 1 False
+  _   -> SolverDiagnostics MultipleSolutions 2 True
+```
+
+Likewise, algebraic simplification is a compositional pipeline rather than a
+collection of ad-hoc rewrite rules:
+
+```haskell
+simplify :: Expr -> Expr
+simplify = fromPolynomial . toPolynomial
+```
+
+And the Blackjack game remains reproducible because shuffling is a pure,
+seeded transformation:
+
+```haskell
+shuffleWithSeed :: Integer -> [Card] -> [Card]
+```
+
+## Command reference
+
+```text
+fp-toolkit blackjack
+fp-toolkit blackjack-demo
+fp-toolkit puzzles [QUERY]
+fp-toolkit puzzle NAME
+fp-toolkit sudoku PUZZLE_FILE
+fp-toolkit sudoku --diagnose PUZZLE_FILE
+fp-toolkit simplify EXPRESSION
+fp-toolkit evaluate VALUE EXPRESSION
+```
+
+Algebra input supports integers, `x`, `+`, `-`, `*`, parentheses, and
+non-negative powers of `x`. Quote expressions in your shell.
+
+## Project layout
+
+```text
+src/Functional/
+  Blackjack.hs          Pure game rules and seedable shuffle
+  Sudoku.hs             Parser, solver, and bounded diagnostics
+  Sudoku/Catalogue.hs   Searchable named puzzle collection
+  Algebra.hs            Expression parser, evaluator, and normaliser
+app/Main.hs             Command-line boundary
+test/Main.hs            Examples and QuickCheck properties
+examples/               Sample Sudoku input
+docs/                   Audit and architecture decisions
+```
+
+## Quality bar
+
+```bash
+cabal check
 cabal build all
 cabal test all
 ```
 
-The library and executable intentionally use only `base`. The test suite adds
-QuickCheck for property-based verification; Cabal fetches it automatically.
+The library and executable use only `base`. The test suite adds QuickCheck and
+checks 100 generated cases for each of these invariants:
 
-The interactive Blackjack game uses a seedable pseudo-random shuffle, so the
-rules and deck handling remain deterministic and testable; it is intended for
-local play, not security-sensitive randomness.
+- shuffling preserves every card in a deck;
+- simplification preserves expression evaluation;
+- rendered algebra parses back to the same meaning; and
+- Sudoku's bounded solver never exceeds its requested limit.
+
+GitHub Actions runs the build and test suite on every push and pull request.
+
+## From course archive to maintained project
+
+The project began as selected COMS10016 Functional Programming coursework.
+The original files remain in local-only `resources/` for reference; they are
+not part of the build. The maintained codebase is deliberately narrower and
+complete.
+
+- [Concept map](docs/CONCEPT_MAP.md) — why each course idea was adopted,
+  deferred, or kept as reference material.
+- [Migration audit](docs/AUDIT.md) — the original archive’s status and the
+  maintained project boundary.
+
+---
+
+The name **Functional Programming Toolkit** is intentional: it describes a
+growing set of small, complete Haskell programs without tying the repository to
+one game, one assignment, or one course module.
