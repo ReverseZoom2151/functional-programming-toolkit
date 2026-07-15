@@ -35,7 +35,9 @@ cabal run fp-toolkit -- sudoku examples/easy-sudoku.txt
 The public modules keep the interesting logic pure and isolate I/O in the CLI.
 That makes the rules engine, solver, and simplifier easy to test and reuse.
 See [the migration audit](docs/AUDIT.md) for the project boundary and the status
-of the historical material.
+of the historical material. [The concept map](docs/CONCEPT_MAP.md) explains
+which course ideas were promoted into the toolkit, which remain local reference
+material, and why.
 
 ### Algebra input
 
