@@ -1,0 +1,19 @@
+name: Haskell CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.4'
+          cabal-version: '3.8'
+      - name: Build
+        run: cabal build all
+      - name: Test
+        run: cabal test all
