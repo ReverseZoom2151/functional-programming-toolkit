@@ -9,7 +9,7 @@ three executables:
 | --- | --- |
 | Library | Pure Blackjack, Sudoku, algebra, and Tetris domain logic |
 | `fp-toolkit` | Main terminal commands, interactive Blackjack, and algebra REPL |
-| `fp-bench` | CPU-time diagnostic benchmark for the curated hard Sudoku puzzle |
+| `fp-bench` | CPU-time diagnostic comparison across every curated Sudoku puzzle |
 | `fp-tetris` | Separately scoped terminal Tetris game loop |
 
 The package depends only on `base` and `containers`; the test suite adds
@@ -32,7 +32,8 @@ The tests combine focused examples with generated properties:
 - Sudoku bounded search respects its requested limit;
 - Sudoku examples cover parser failure, classification, catalogue lookup, and
   next-decision hints; and
-- Tetris examples cover hard-drop spawning and wall collision behaviour.
+- Tetris examples cover hard-drop spawning, line clearing, preview, level
+  progression, and wall collision behaviour.
 
 GitHub Actions runs the build and test suite for pushes and pull requests.
 

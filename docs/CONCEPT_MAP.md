@@ -39,10 +39,10 @@ Every maintained domain has:
 
 | Domain | Core module | Terminal capability | Functional focus |
 | --- | --- | --- | --- |
-| Blackjack | `Functional.Blackjack` | Interactive game and deterministic demo | Algebraic data types, seeded shuffle, state transitions |
-| Sudoku | `Functional.Sudoku`, `Functional.Sudoku.Catalogue` | File solving, diagnostics, hints, named-puzzle search | Constraint search, bounded exploration, `Map` indexing |
-| Algebra | `Functional.Algebra` | Simplify/evaluate commands and a REPL | Recursive ASTs, polynomial normal forms, substitution |
-| Tetris | `Functional.Tetris` | Standalone `fp-tetris` game | Immutable board transitions, collision rules, rendering |
+| Blackjack | `Functional.Games.Blackjack` | Interactive game and deterministic demo | Algebraic data types, seeded shuffle, state transitions |
+| Sudoku | `Functional.Puzzles.Sudoku`, `Functional.Puzzles.SudokuCatalogue` | File solving, diagnostics, hints, named-puzzle search | Constraint search, bounded exploration, `Map` indexing |
+| Algebra | `Functional.Symbolic.Algebra` | Expand/factor/evaluate commands and a REPL | Recursive ASTs, polynomial normal forms, substitution |
+| Tetris | `Functional.Games.Tetris` | Standalone `fp-tetris` game with preview and levels | Immutable board transitions, collision rules, rendering |
 
 ## Capability map
 
@@ -51,9 +51,9 @@ Every maintained domain has:
 | Reproducible Blackjack rounds | `shuffleWithSeed`, `playRound` | Unit examples and a deck-preservation property |
 | Sudoku solution classification | `diagnose`, `solveUpTo` | Unique, impossible, and ambiguous puzzle tests |
 | Explainable Sudoku next step | `nextHint`, `sudoku --hint FILE` | Known constrained-cell example |
-| Search performance signal | `fp-bench` | CPU-time measurement of the bundled hard puzzle |
-| Symbolic exploration | `differentiate`, `substitute`, `fp-toolkit repl` | Parser, semantic, and derivative examples |
-| Terminal Tetris | `fp-tetris` | Hard-drop and wall-boundary regression tests |
+| Search performance signal | `fp-bench` | CPU-time comparison across every curated puzzle |
+| Symbolic exploration | `expand`, `factor`, `differentiate`, `substitute`, `fp-toolkit repl` | Parser, semantic, derivative, and factorisation examples |
+| Terminal Tetris | `fp-tetris` | Hard-drop, line-clear, wall-boundary, preview, and level regression tests |
 
 ## Product boundary
 

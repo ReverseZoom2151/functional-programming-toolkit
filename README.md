@@ -15,9 +15,9 @@ pure, exposes a focused API, and is backed by examples plus property tests.
 | Domain | What you can do | Functional idea |
 | --- | --- | --- |
 | **Blackjack** | Play a terminal game or simulate deterministic rounds | Algebraic data types and explicit state transitions |
-| **Sudoku** | Solve files or named puzzles; diagnose solutions and request the next hint | Backtracking search with bounded exploration |
-| **Algebra** | Parse, evaluate, differentiate, and canonicalise single-variable expressions | Recursive ASTs and normal forms |
-| **Tetris** | Play a separately scoped terminal game | Pure state machine, collision checking, and rendering |
+| **Sudoku** | Solve four curated puzzles or files; diagnose solutions and request the next hint | Backtracking search with bounded exploration |
+| **Algebra** | Parse, evaluate, expand, factor, differentiate, and canonicalise expressions | Recursive ASTs and normal forms |
+| **Tetris** | Play a separately scoped terminal game with preview and levels | Pure state machine, collision checking, and rendering |
 
 ## Run it
 
@@ -61,8 +61,9 @@ cabal run fp-tetris
 ```
 
 The Tetris controls are `l`, `r`, `u` (rotate), `d` (down), `drop` or a space
-to hard-drop, and `q` to quit. Its game rules are pure; the executable only
-owns the input loop and terminal rendering.
+to hard-drop, and `q` to quit. The header previews the next tetromino and
+shows score, cleared lines, and level (which rises every ten lines). Its game
+rules are pure; the executable only owns the input loop and terminal rendering.
 
 ## Why it is functional
 
@@ -114,6 +115,8 @@ fp-toolkit sudoku PUZZLE_FILE
 fp-toolkit sudoku --diagnose PUZZLE_FILE
 fp-toolkit sudoku --hint PUZZLE_FILE
 fp-toolkit simplify EXPRESSION
+fp-toolkit expand EXPRESSION
+fp-toolkit factor EXPRESSION
 fp-toolkit evaluate VALUE EXPRESSION
 fp-toolkit repl
 fp-bench
@@ -122,19 +125,19 @@ fp-tetris
 
 Algebra input supports integers, `x`, `+`, `-`, `*`, parentheses, and
 non-negative powers of `x`. Quote expressions in your shell. In the REPL,
-use `:help`, `:eval N EXPR`, `:diff EXPR`, and `:quit`. `fp-bench` measures
-the bundled hard Sudoku puzzle using CPU time; use it to compare future solver
-changes rather than treating one machine's timing as a universal result.
+use `:help`, `:expand EXPR`, `:factor EXPR`, `:eval N EXPR`, `:diff EXPR`, and
+`:quit`. `factor` extracts a common integer coefficient and shared power of
+`x`; `expand` emits the canonical polynomial form. `fp-bench` measures every
+catalogue puzzle using CPU time, so use it to compare solver changes on one
+machine rather than treating timings as universal results.
 
 ## Project layout
 
 ```text
 src/Functional/
-  Blackjack.hs          Pure game rules and seedable shuffle
-  Sudoku.hs             Parser, solver, and bounded diagnostics
-  Sudoku/Catalogue.hs   Searchable named puzzle collection
-  Algebra.hs            Expression parser, evaluator, and normaliser
-  Tetris.hs             Pure board, collision, scoring, and rendering engine
+  Games/                Blackjack rules and Tetris engine
+  Puzzles/              Sudoku solver and searchable catalogue
+  Symbolic/             Algebra parser, evaluator, normaliser, and factoring
 app/Main.hs             Main toolkit command-line boundary and algebra REPL
 app/TetrisMain.hs       Separately scoped terminal Tetris boundary
 bench/Main.hs           Repeatable Sudoku diagnostic benchmark
@@ -159,8 +162,9 @@ and checks 100 generated cases for each of these invariants:
 - rendered algebra parses back to the same meaning; and
 - Sudoku's bounded solver never exceeds its requested limit.
 
-Focused examples also cover Tetris hard-drop and wall behaviour, Sudoku hints
-and diagnostics, catalogue search, and algebra differentiation/substitution.
+Focused examples also cover Tetris hard-drop, line clearing, wall behaviour,
+preview, and level progression; Sudoku hints, diagnostics, and catalogue
+search; plus algebra differentiation, substitution, expansion, and factoring.
 
 GitHub Actions runs the build and test suite on every push and pull request.
 
