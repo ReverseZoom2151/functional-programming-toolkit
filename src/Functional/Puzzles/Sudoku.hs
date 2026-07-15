@@ -1,5 +1,5 @@
 -- | A pure, backtracking Sudoku solver for ordinary 9x9 puzzles.
-module Functional.Sudoku
+module Functional.Puzzles.Sudoku
   ( Board
   , Hint (..)
   , SolutionSummary (..)

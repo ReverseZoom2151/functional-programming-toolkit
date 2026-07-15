@@ -1,10 +1,10 @@
 module Main where
 
-import Functional.Algebra
-import Functional.Blackjack
-import Functional.Sudoku
-import Functional.Sudoku.Catalogue
-import Functional.Tetris
+import Functional.Games.Blackjack
+import Functional.Games.Tetris
+import Functional.Puzzles.Sudoku
+import Functional.Puzzles.SudokuCatalogue
+import Functional.Symbolic.Algebra
 import Data.List (sort)
 import System.Exit (exitFailure)
 import Test.QuickCheck (Arbitrary (arbitrary), Gen, Testable, choose, frequency, isSuccess, quickCheckResult, sized)
@@ -47,11 +47,12 @@ sudokuTests = case parseBoard easyPuzzle of
 
 catalogueTests :: IO Bool
 catalogueTests = do
-  expectedEntries <- check "Puzzle catalogue contains the curated puzzles" (map puzzleName catalogue == ["easy", "hard"])
+  expectedEntries <- check "Puzzle catalogue contains the curated puzzles" (map puzzleName catalogue == ["classic", "easy", "hard", "medium"])
   caseInsensitive <- check "Puzzle catalogue lookup ignores case" (case lookupPuzzle "HARD" of Just puzzle -> puzzleName puzzle == "hard"; Nothing -> False)
   descriptionSearch <- check "Puzzle catalogue searches descriptions" (map puzzleName (findPuzzles "starter") == ["easy"])
   prefixSearch <- check "Puzzle catalogue supports indexed name prefixes" (map puzzleName (findPuzzles "ha") == ["hard"])
-  pure (expectedEntries && caseInsensitive && descriptionSearch && prefixSearch)
+  expandedLookup <- check "Puzzle catalogue includes additional curated difficulties" (case lookupPuzzle "medium" of Just puzzle -> puzzleName puzzle == "medium"; Nothing -> False)
+  pure (expectedEntries && caseInsensitive && descriptionSearch && prefixSearch && expandedLookup)
 
 algebraTests :: IO Bool
 algebraTests = do
@@ -63,17 +64,35 @@ algebraTests = do
   normalisesProduct <- check "Simplification combines polynomial products" (renderExpr (simplify (Multiply Variable Variable)) == "x^2")
   derivative <- check "Differentiation returns a canonical derivative" (renderExpr (differentiate (Add (Power 3) (Multiply (Constant 2) Variable))) == "(2 + (3 * x^2))")
   substitution <- check "Substitution composes expressions" (eval 3 (substitute (Add Variable (Constant 1)) (Power 2)) == 16)
-  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution)
+  expansion <- check "Expansion produces the canonical polynomial form" (renderExpr (expand (Multiply (Add Variable (Constant 1)) (Add Variable (Constant 1)))) == "((1 + (2 * x)) + x^2)")
+  factorisation <- check "Factorisation extracts a common monomial without changing meaning" (let original = Add (Multiply (Constant 6) (Power 3)) (Multiply (Constant 9) (Power 2)) in eval 4 (factor original) == eval 4 original && renderExpr (factor original) == "((3 * x^2) * (3 + (2 * x)))")
+  pure (preservesValue && canonicalZero && parserRoundTrip && invalidSyntax && normalisesProduct && derivative && substitution && expansion && factorisation)
 
 tetrisTests :: IO Bool
 tetrisTests = do
   let initial = newGame [0]
       afterDrop = step Drop initial
       movedLeft = foldl (\game action -> step action game) initial (replicate 20 Leftward)
+      afterLine = playBatch (newGame (repeat 3))
+      afterTwentyLines = iterate (playBatch . playBatch) (newGame (repeat 3)) !! 5
   dropLocksOnlyActivePiece <- check "Tetris hard drop locks one piece and spawns exactly one successor" (not (gameOver afterDrop) && length (filter (== '#') (renderGame afterDrop)) == 8)
   dropDoesNotScoreWithoutLine <- check "Tetris does not score a hard drop without a cleared line" (score afterDrop == 0)
   movementStopsAtWall <- check "Tetris prevents movement through the left wall" (renderGame (step Leftward movedLeft) == renderGame movedLeft)
-  pure (dropLocksOnlyActivePiece && dropDoesNotScoreWithoutLine && movementStopsAtWall)
+  preview <- check "Tetris previews the next queued piece" (nextPiece initial == 'I')
+  completedRows <- check "Tetris clears completed rows and records score" (linesCleared afterLine == 2 && score afterLine == 400)
+  levelProgression <- check "Tetris raises its level every ten cleared lines" (linesCleared afterTwentyLines >= 10 && level afterTwentyLines >= 2)
+  pure (dropLocksOnlyActivePiece && dropDoesNotScoreWithoutLine && movementStopsAtWall && preview && completedRows && levelProgression)
+
+playBatch :: Game -> Game
+playBatch starting = foldl placeAt starting [0, 2, 4, 6, 8]
+  where
+    placeAt :: Game -> Int -> Game
+    placeAt current target = step Drop (moveHorizontally (target - 3) current)
+
+    moveHorizontally :: Int -> Game -> Game
+    moveHorizontally displacement current
+      | displacement < 0 = foldl (\state _ -> step Leftward state) current [1 .. abs displacement]
+      | otherwise = foldl (\state _ -> step Rightward state) current [1 .. displacement]
 
 propertyTests :: IO Bool
 propertyTests = do

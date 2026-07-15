@@ -1,9 +1,9 @@
 module Main where
 
-import Functional.Algebra
-import Functional.Blackjack
-import Functional.Sudoku
-import Functional.Sudoku.Catalogue
+import Functional.Games.Blackjack
+import Functional.Puzzles.Sudoku
+import Functional.Puzzles.SudokuCatalogue
+import Functional.Symbolic.Algebra
 import System.CPUTime (getCPUTime)
 import System.Environment (getArgs)
 import System.Exit (exitFailure)
@@ -33,6 +33,10 @@ run ["simplify-demo"] = do
   putStrLn ("At x = 4:   " ++ show (eval 4 expression))
 run ("simplify":source) = withExpression source $ \expression ->
   putStrLn (renderExpr (simplify expression))
+run ("expand":source) = withExpression source $ \expression ->
+  putStrLn (renderExpr (expand expression))
+run ("factor":source) = withExpression source $ \expression ->
+  putStrLn (renderExpr (factor expression))
 run ("evaluate":value:source) = case reads value of
   [(x, "")] -> withExpression source $ \expression -> print (eval x expression)
   _ -> failWith "VALUE must be an integer"
@@ -67,6 +71,8 @@ run _ = do
   putStrLn "  blackjack-demo"
   putStrLn "  simplify-demo"
   putStrLn "  simplify EXPRESSION"
+  putStrLn "  expand EXPRESSION"
+  putStrLn "  factor EXPRESSION"
   putStrLn "  evaluate VALUE EXPRESSION"
   putStrLn "  repl"
   putStrLn "  puzzles [QUERY]"
@@ -129,6 +135,8 @@ algebraRepl = do
         [":quit"] -> putStrLn "Goodbye."
         [":help"] -> do
           putStrLn "EXPR            simplify an expression"
+          putStrLn ":expand EXPR     expand EXPR into canonical polynomial form"
+          putStrLn ":factor EXPR     factor a common monomial from EXPR"
           putStrLn ":eval N EXPR    evaluate EXPR at x = N"
           putStrLn ":diff EXPR      differentiate EXPR"
           putStrLn ":quit            leave the REPL"
@@ -136,6 +144,8 @@ algebraRepl = do
         (":eval":value:source) -> case reads value of
           [(x, "")] -> printExpression (unwords source) (print . eval x) >> loop
           _ -> putStrLn "N must be an integer." >> loop
+        (":expand":source) -> printExpression (unwords source) (putStrLn . renderExpr . expand) >> loop
+        (":factor":source) -> printExpression (unwords source) (putStrLn . renderExpr . factor) >> loop
         (":diff":source) -> printExpression (unwords source) (putStrLn . renderExpr . differentiate) >> loop
         _ -> printExpression input (putStrLn . renderExpr . simplify) >> loop
 

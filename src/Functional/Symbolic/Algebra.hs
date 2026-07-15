@@ -1,9 +1,11 @@
 -- | Symbolic expressions and canonical single-variable polynomials.
-module Functional.Algebra
+module Functional.Symbolic.Algebra
   ( Expr (..)
   , Polynomial
   , eval
   , simplify
+  , expand
+  , factor
   , differentiate
   , substitute
   , toPolynomial
@@ -34,6 +36,29 @@ eval x expression = case expression of
 
 simplify :: Expr -> Expr
 simplify = fromPolynomial . toPolynomial
+
+-- | Expand an expression into its canonical polynomial form. This is named
+-- separately from 'simplify' so it can be used directly from the CLI/REPL.
+expand :: Expr -> Expr
+expand = simplify
+
+-- | Factor out the greatest common integer coefficient and the lowest shared
+-- power of @x@. Expressions without a non-trivial common monomial are left in
+-- canonical expanded form.
+factor :: Expr -> Expr
+factor expression
+  | null nonZero = Constant 0
+  | coefficient == 1 && power == 0 = fromPolynomial polynomial
+  | otherwise = Multiply (monomial coefficient power) (fromPolynomial remainder)
+  where
+    polynomial@(Polynomial coefficients) = toPolynomial expression
+    nonZero = filter (/= 0) coefficients
+    power = length (takeWhile (== 0) coefficients)
+    unsignedCoefficient = foldr1 gcd (map abs nonZero)
+    coefficient
+      | last nonZero < 0 = negate unsignedCoefficient
+      | otherwise = unsignedCoefficient
+    remainder = Polynomial (map (`div` coefficient) (drop power coefficients))
 
 -- | Differentiate an expression with respect to @x@ and return its canonical
 -- polynomial form.
@@ -165,3 +190,9 @@ derivative (Polynomial (_ : coefficients)) = normalise
 powerOf :: Expr -> Int -> Expr
 powerOf _ 0 = Constant 1
 powerOf expression n = foldr1 Multiply (replicate n expression)
+
+monomial :: Integer -> Int -> Expr
+monomial coefficient power = case power of
+  0 -> Constant coefficient
+  _ | coefficient == 1 -> Power power
+    | otherwise -> Multiply (Constant coefficient) (Power power)

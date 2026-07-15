@@ -1,6 +1,16 @@
 -- | A dependency-free, pure Tetris game engine for the terminal executable.
-module Functional.Tetris
-  ( Action (..), Game, newGame, step, renderGame, gameOver, score ) where
+module Functional.Games.Tetris
+  ( Action (..)
+  , Game
+  , newGame
+  , step
+  , renderGame
+  , gameOver
+  , score
+  , linesCleared
+  , level
+  , nextPiece
+  ) where
 
 import Data.List (nub)
 
@@ -9,7 +19,7 @@ type Board = [Point]
 
 data Kind = I | J | L | O | S | T | Z deriving (Eq, Enum, Bounded)
 data Piece = Piece Kind Point Int deriving Eq
-data Game = Game Board Piece [Kind] Int Bool deriving Eq
+data Game = Game Board Piece [Kind] Int Int Bool deriving Eq
 data Action = Leftward | Rightward | Rotate | Downward | Drop deriving (Eq, Show)
 
 width, height :: Int
@@ -18,19 +28,31 @@ height = 20
 
 newGame :: [Int] -> Game
 newGame randoms = case kinds of
-  first:rest -> Game [] (Piece first (3, 0) 0) rest 0 False
+  first:rest -> Game [] (Piece first (3, 0) 0) rest 0 0 False
   [] -> error "cyclic piece supply expected"
   where
     kinds = map (toEnum . (`mod` 7) . abs) randoms ++ cycle [I, J, L, O, S, T, Z]
 
 score :: Game -> Int
-score (Game _ _ _ points _) = points
+score (Game _ _ _ points _ _) = points
+
+linesCleared :: Game -> Int
+linesCleared (Game _ _ _ _ lines' _) = lines'
+
+-- | The current level rises every ten cleared lines, starting at level one.
+level :: Game -> Int
+level game = 1 + linesCleared game `div` 10
+
+-- | A compact preview of the next queued tetromino.
+nextPiece :: Game -> Char
+nextPiece (Game _ _ (kind:_) _ _ _) = kindName kind
+nextPiece (Game _ _ [] _ _ _) = '?'
 
 gameOver :: Game -> Bool
-gameOver (Game _ _ _ _ finished) = finished
+gameOver (Game _ _ _ _ _ finished) = finished
 
 step :: Action -> Game -> Game
-step _ game@(Game _ _ _ _ True) = game
+step _ game@(Game _ _ _ _ _ True) = game
 step action game = case action of
   Leftward -> move (-1, 0) game
   Rightward -> move (1, 0) game
@@ -39,32 +61,35 @@ step action game = case action of
   Drop -> dropPiece game
 
 move :: Point -> Game -> Game
-move delta game@(Game board piece supply points done)
-  | valid board shifted = Game board shifted supply points done
+move delta game@(Game board piece supply points lines' done)
+  | valid board shifted = Game board shifted supply points lines' done
   | otherwise = game
   where shifted = translate delta piece
 
 rotate :: Game -> Game
-rotate game@(Game board (Piece kind pos turns) supply points done)
-  | valid board spun = Game board spun supply points done
+rotate game@(Game board (Piece kind pos turns) supply points lines' done)
+  | valid board spun = Game board spun supply points lines' done
   | otherwise = game
   where spun = Piece kind pos ((turns + 1) `mod` 4)
 
 descend :: Game -> Game
-descend (Game board piece supply points done)
-  | valid board lowered = Game board lowered supply points done
-  | otherwise = spawn (clearLines (nub (board ++ cells piece))) supply points
+descend (Game board piece supply points lines' done)
+  | valid board lowered = Game board lowered supply points lines' done
+  | otherwise = spawn (clearLines (nub (board ++ cells piece))) supply points lines'
   where lowered = translate (0, 1) piece
 
 dropPiece :: Game -> Game
-dropPiece game@(Game board piece _ _ _)
+dropPiece game@(Game board piece _ _ _ _)
   | valid board (translate (0, 1) piece) = dropPiece (descend game)
   | otherwise = descend game
 
-spawn :: (Board, Int) -> [Kind] -> Int -> Game
-spawn (board, cleared) (kind:rest) points = Game board (Piece kind (3, 0) 0) rest (points + 100 * cleared * cleared) blocked
-  where blocked = not (valid board (Piece kind (3, 0) 0))
-spawn _ [] _ = error "infinite piece supply expected"
+spawn :: (Board, Int) -> [Kind] -> Int -> Int -> Game
+spawn (board, cleared) (kind:rest) points lines' = Game board (Piece kind (3, 0) 0) rest nextScore nextLines blocked
+  where
+    blocked = not (valid board (Piece kind (3, 0) 0))
+    nextScore = points + 100 * cleared * cleared * (1 + lines' `div` 10)
+    nextLines = lines' + cleared
+spawn _ [] _ _ = error "infinite piece supply expected"
 
 valid :: Board -> Piece -> Bool
 valid board piece = all inside occupied && all (`notElem` board) occupied
@@ -98,7 +123,16 @@ clearLines board = (shifted, length full)
         shifted = [(x, y + length [() | row <- full, row > y]) | (x, y) <- board, y `notElem` full]
 
 renderGame :: Game -> String
-renderGame (Game board piece _ points done) = unlines (header : map row [0 .. height - 1])
+renderGame game@(Game board piece _ points _ done) = unlines (header : map row [0 .. height - 1])
   where occupied = board ++ cells piece
-        header = "Tetris — " ++ show points ++ " points" ++ if done then " — GAME OVER" else ""
+        header = "Tetris — " ++ show points ++ " points — level " ++ show (level game) ++ " — lines " ++ show (linesCleared game) ++ " — next " ++ [nextPiece game] ++ if done then " — GAME OVER" else ""
         row y = '|' : [if (x, y) `elem` occupied then '#' else ' ' | x <- [0 .. width - 1]] ++ "|"
+
+kindName :: Kind -> Char
+kindName I = 'I'
+kindName J = 'J'
+kindName L = 'L'
+kindName O = 'O'
+kindName S = 'S'
+kindName T = 'T'
+kindName Z = 'Z'

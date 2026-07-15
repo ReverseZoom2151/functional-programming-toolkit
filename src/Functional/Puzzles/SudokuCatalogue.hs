@@ -1,5 +1,5 @@
 -- | A small curated catalogue of named Sudoku puzzles.
-module Functional.Sudoku.Catalogue
+module Functional.Puzzles.SudokuCatalogue
   ( Puzzle (..)
   , catalogue
   , findPuzzles
@@ -10,7 +10,7 @@ import Data.Char (toLower)
 import qualified Data.Map.Strict as Map
 import Data.List (isInfixOf, nubBy)
 import Data.Maybe (mapMaybe)
-import Functional.Sudoku (Board, parseBoard)
+import Functional.Puzzles.Sudoku (Board, parseBoard)
 
 data Puzzle = Puzzle
   { puzzleName :: String
@@ -35,6 +35,14 @@ definitions =
   [ ( "easy"
     , "A gentle, uniquely solvable starter puzzle."
     , "53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79"
+    )
+  , ( "medium"
+    , "A balanced mid-range puzzle for everyday solver checks."
+    , "200080300060070084030500209000105408000000000402706000301007040720040060004010003"
+    )
+  , ( "classic"
+    , "A classic high-constraint puzzle."
+    , "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
     )
   , ( "hard"
     , "A deeper search puzzle for exercising the solver."

@@ -1,5 +1,5 @@
 -- | A small, pure Blackjack rules engine.
-module Functional.Blackjack
+module Functional.Games.Blackjack
   ( Suit (..)
   , Rank (..)
   , Card (..)

@@ -23,11 +23,11 @@ library
   import: warnings
   hs-source-dirs: src
   exposed-modules:
-      Functional.Blackjack
-      Functional.Sudoku
-      Functional.Sudoku.Catalogue
-      Functional.Algebra
-      Functional.Tetris
+      Functional.Games.Blackjack
+      Functional.Games.Tetris
+      Functional.Puzzles.Sudoku
+      Functional.Puzzles.SudokuCatalogue
+      Functional.Symbolic.Algebra
   build-depends:
       base >=4.14 && <5,
       containers >=0.6 && <0.8

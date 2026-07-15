@@ -1,6 +1,6 @@
 module Main where
 
-import Functional.Tetris
+import Functional.Games.Tetris
 import System.IO (hFlush, stdout)
 
 main :: IO ()
