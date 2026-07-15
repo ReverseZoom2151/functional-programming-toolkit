@@ -24,6 +24,8 @@ Install GHC and Cabal, then run:
 cabal test
 cabal run fp-toolkit -- blackjack-demo
 cabal run fp-toolkit -- simplify-demo
+cabal run fp-toolkit -- simplify "2 * x^2 + x - 3"
+cabal run fp-toolkit -- evaluate 4 "2 * x^2 + x - 3"
 cabal run fp-toolkit -- sudoku examples/easy-sudoku.txt
 ```
 
@@ -33,6 +35,12 @@ The public modules keep the interesting logic pure and isolate I/O in the CLI.
 That makes the rules engine, solver, and simplifier easy to test and reuse.
 See [the migration audit](docs/AUDIT.md) for the project boundary and the status
 of the historical material.
+
+### Algebra input
+
+The algebra commands accept integers, `x`, `+`, `-`, `*`, parentheses, and
+non-negative powers of `x`, such as `2 * x^2 + x - 3`. Quote expressions in
+your shell so their spaces and operators are passed to the program unchanged.
 
 ## Development
 
